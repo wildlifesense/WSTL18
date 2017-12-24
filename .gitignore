@@ -1,5 +1,9 @@
-# Eagle project file
+# Eagle project, backup, and cache files
 *.epf
+*.b#*
+*.s#*
+*.brd.lck
+*.sch.lck
 
 # Prerequisites
 *.d
