@@ -984,6 +984,12 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <rectangle x1="1.016" y1="-0.254" x2="1.524" y2="0.254" layer="51"/>
 <rectangle x1="3.556" y1="-0.254" x2="4.064" y2="0.254" layer="51"/>
 </package>
+<package name="1X2_1.27">
+<wire x1="-0.508" y1="0.762" x2="0.508" y2="0.762" width="0.2032" layer="21"/>
+<pad name="1" x="0" y="0" drill="0.4572" diameter="0.8128"/>
+<pad name="2" x="1.27" y="0" drill="0.4572" diameter="0.8128"/>
+<text x="-1.27" y="0" size="0.8128" layer="25" font="vector" ratio="12" rot="R90" align="center">&gt;NAME</text>
+</package>
 </packages>
 <symbols>
 <symbol name="1X6CONN">
@@ -1000,6 +1006,15 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="-5.08" y1="-12.7" x2="-5.08" y2="5.08" width="0.254" layer="94"/>
 <wire x1="-5.08" y1="5.08" x2="2.54" y2="5.08" width="0.254" layer="94"/>
 </symbol>
+<symbol name="1X2CONN">
+<text x="-1.524" y="6.858" size="1.778" layer="95" font="vector" ratio="12" align="center">&gt;NAME</text>
+<pin name="1" x="-10.16" y="2.54" length="middle"/>
+<pin name="2" x="-10.16" y="0" length="middle"/>
+<wire x1="0" y1="5.08" x2="0" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="0" y1="-2.54" x2="-5.08" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="-2.54" x2="-5.08" y2="5.08" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="5.08" x2="0" y2="5.08" width="0.254" layer="94"/>
+</symbol>
 </symbols>
 <devicesets>
 <deviceset name="1X6CONN-1.27-ROUND">
@@ -1015,6 +1030,22 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <connect gate="G$1" pin="4" pad="4"/>
 <connect gate="G$1" pin="5" pad="5"/>
 <connect gate="G$1" pin="6" pad="6"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="1X2CONN1.27">
+<gates>
+<gate name="G$1" symbol="1X2CONN" x="2.54" y="-2.54"/>
+</gates>
+<devices>
+<device name="" package="1X2_1.27">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/>
 </connects>
 <technologies>
 <technology name=""/>
@@ -1125,7 +1156,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="VCC7" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="UART" library="Connectors" deviceset="4_PIN_0.1_INCH_POGO_CONN_ANGLE" device=""/>
 <part name="U$1" library="Battery_holders" deviceset="LINX-CR2032-BAT-HLD-M-THM" device=""/>
-<part name="TWI" library="Passives" deviceset="CAP_0201_CERAMIC" device=""/>
+<part name="TWI" library="AVR_ISP_127" deviceset="1X2CONN1.27" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -1234,7 +1265,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="139.7" y1="60.96" x2="160.02" y2="60.96" width="0.1524" layer="91"/>
 <junction x="139.7" y="60.96"/>
 <pinref part="TWI" gate="G$1" pin="2"/>
-<wire x1="132.08" y1="78.74" x2="127" y2="60.96" width="0.1524" layer="91"/>
+<wire x1="127" y1="68.58" x2="127" y2="60.96" width="0.1524" layer="91"/>
 <junction x="127" y="60.96"/>
 </segment>
 </net>
@@ -1250,7 +1281,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="147.32" y1="63.5" x2="147.32" y2="58.42" width="0.1524" layer="91"/>
 <junction x="147.32" y="58.42"/>
 <pinref part="TWI" gate="G$1" pin="1"/>
-<wire x1="124.46" y1="78.74" x2="124.46" y2="58.42" width="0.1524" layer="91"/>
+<wire x1="124.46" y1="68.58" x2="124.46" y2="58.42" width="0.1524" layer="91"/>
 <junction x="124.46" y="58.42"/>
 </segment>
 </net>
