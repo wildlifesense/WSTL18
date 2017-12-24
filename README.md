@@ -10,7 +10,7 @@ temperature sensor, an AT25DN512C EEPROM memory and a ECS-.327-7-34B-C-TR
 Details of the WSTL18 can be found at
 https://hackaday.io/project/27560-low-costpowersize-temperature-logger
 
-Copyright (C) 2017 Nikos Vallianos <nikos@wildlifesense.com>
+Copyright (C) 2017 Nikos Vallianos
 
 
 The WSTL18 firmware is released under the GNU General Public License version 3
