@@ -12,7 +12,6 @@ https://hackaday.io/project/27560-low-costpowersize-temperature-logger
 
 Copyright (C) 2017 Nikos Vallianos
 
-
 The WSTL18 firmware is released under the GNU General Public License version 3
 (See COPYING for details).
 
