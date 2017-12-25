@@ -84,7 +84,7 @@ void wstl18Init(void) {
 	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
 	//uartEnable();					// Start the uart module. Should this be here?
 	//twiInit();
-	max30205Init();				// Set up the MAX30205 temperature logger.
+	max30205Enable();				// Set up the MAX30205 temperature logger.
 	memoryInit();				// Set up AT25DN512C and put to sleep.
 }
 
@@ -92,7 +92,7 @@ void wstl18Sleep(void) {
 	// Make sure memory is not busy.
 		// Put the memory to sleep
 	// Put the SPI module to sleep
-	max30205Shutdown();
+	max30205Disable();
 	twiDisable();
 
 }
@@ -190,4 +190,9 @@ void wstl18DumpAllMemory(void) {
 		// Read memory from index i.
 		// Send byte over uart.
 	// 
+}
+
+
+uint16_t wstl18GetTemperature(void) {
+	
 }

@@ -50,8 +50,8 @@
 
 #define MAX30205_CONF_DEFAULT		0b00000000	// Default configuration register after power-on reset.
 
-void		max30205Init(void);
-void		max30205Shutdown(void);
+void		max30205Enable(void);
+void		max30205Disable(void);
 void		max30205Resume(void);
 void		max30205SaveConfiguration(void);
 uint8_t		max30205ReadConfiguration(void);

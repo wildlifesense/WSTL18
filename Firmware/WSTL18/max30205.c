@@ -37,22 +37,23 @@ uint8_t max30205_configuration_register;
 /*
  * Initialize MAX30205 sensor.
  */
-void max30205Init(void) {
+void max30205Enable(void) {
 	DDRD &= ~(1<<DDRD2); PORTD |= (1<<PORTD2);		// Set D2 as input and pull-up.
 	// No config setup; default is good.
 	twiEnable();
 	max30205_configuration_register = 0;
-	max30205Shutdown();
+	max30205Disable();
 	twiDisable();
 }
 
 /*
 To minimize power consumption by the MAX30205:
-+ Set MAX30205 to shutdown mode.
-+ Switch TWI off
-+ Set PD2 as input with pull-up. Pull-up resistor should then have no current.
+ + Set MAX30205 to shutdown mode.
+ + Switch TWI off
+ + Set PD2 as input with pull-up. Pull-up resistor should then have no current.
+	This is the default state of PD2 anyway.
 */
-void max30205Shutdown(void) {
+void max30205Disable(void) {
 	max30205_configuration_register |= (1<<MAX30205_CONF_SHUTDOWN);
 	max30205SaveConfiguration();
 	twiDisable();
@@ -84,25 +85,39 @@ void max30205LoadConfiguration(void) {
 }
 
 /*
- * Trigger a one-shot on the temperature sensor.
- */
+	max30205StartOneShot: Trigger a one-shot on the temperature sensor while it's in shutdown mode.
+	This function only triggers the temperature conversion. Because it takes a considerable time
+	until the results are ready, it will in the future be useful to disable the TWI, put the mcu
+	in power save, wait for the conversion time to pass, then wake the mcu up, enable the TWI, and
+	finally read the temperature.
+	For now, the mcu will only use _delay_ms, but I'm keeping the Start and Read functions separate
+	so they're in place for the above power-saving method to be implemented.
+	
+	It is the job of a higher-level module to control max30205StartOneShot and max30205ReadTemperature
+	for optimization. This module only offers these two functions and nothing above them.
+	
+*/
 void max30205StartOneShot(void) {
 	if(max30205_configuration_register & (1<<MAX30205_CONF_SHUTDOWN)) {	// One-shot only works from shut-down mode. Ignored otherwise.
 		max30205_configuration_register |= (1<<MAX30205_CONF_ONESHOT);	// Set one-shot bit in configuration variable
 		max30205SaveConfiguration();
 		max30205_configuration_register &= ~(1<<MAX30205_CONF_ONESHOT);	// Only unset ONESHOT in variable, sensor auto-resets after one-shot completes.
 	} // else: some sort of programming fault?
-	// While in shutdown, the I2C interface remains active and all registers remain accessible to the master.
+	// While in shutdown, the I2C interface remains active and all registers remain
+	// accessible to the master.
 	// The results of a conversion are available to read after 50ms.
 	// Max conversion time is 50ms.
 }
 
 /*
- *	max30205ReadTemperature: Read the current temperature from the sensor. 
- *  If reading after a one-shot, wait for 50ms before reading.
- *
- *	Returns:
- *		16-bit temperature reading as given by the device.
+	max30205ReadTemperature: Read the current temperature from the sensor. 
+	If reading after a one-shot, wait for 50ms before reading.
+ 
+	Returns:
+		16-bit temperature reading as given by the device. Actual temperature depends on settings.
+
+	It is the job of a higher-level module to control max30205StartOneShot and max30205ReadTemperature
+	for optimization. This module only offers these two functions and nothing above them.
  */
 uint16_t max30205ReadTemperature(void) {
 	return twiReadRegister16(MAX30205_ADDRESS, MAX30205_REG_TEMP);
