@@ -49,7 +49,6 @@
   see <http://www.gnu.org/licenses/>.
 
 ********************************************************************************/
-
 #include <avr/io.h>
 #include "spi.h"
 #include "memory.h"
@@ -150,11 +149,13 @@ void _memorySingleCommand(uint8_t command) {
 // Send a 3-byte address to the flash unit
 void _memorySendAddress(uint16_t address) {
 	spiTradeByte((uint8_t) address>>16);			// Send most significant byte first.
-	spiTradeByte((uint8_t) address>>8);			// Then send middle significant byte.
+	spiTradeByte((uint8_t) address>>8);				// Then send middle significant byte.
 	spiTradeByte((uint8_t) address);				// Then send least significant byte.
 }
 
-// Send dummy_size zeros over to the flash memory.
+/*
+ *	_memorySendDummy: Send dummy_size zeros over to the flash memory.
+ */
 void _memorySendDummy(uint8_t dummy_size) {
 	if (dummy_size > 254) {								// Prevent infinite loop.
 		_memoryFlagSet(MEMORY_FLAG_FIRMWARE_ERROR);
@@ -166,7 +167,9 @@ void _memorySendDummy(uint8_t dummy_size) {
 }
 
 /*
- * _memoryFlagSet: Set the flag to indicate said error occurred.
+ *	_memoryFlagSet: Set the flag to indicate said error occurred.
+ *	This is only for internal module use and has nothing to do
+ *	with the actual memory chip.
  */
 void _memoryFlagSet(uint8_t flag_position) {
 	memory_flags |= (1<<flag_position);
@@ -187,10 +190,14 @@ void _memoryFlagClearAll(void) {
 }
 /*********************** End Internal Functions *******************************/
 
+
+/*********************** Begin Public Functions *******************************/
+
 /*
- * memoryInit: Initialize the memory chip for first use after power-up and until the logger is power-cycled.
+	memoryInit: Initialize the memory chip for first use after power-up and until
+	the logger is power-cycled.
  */
-void memoryInit(void) {
+void memoryInitialize(void) {
 	MEMORY_CS_INIT;						// Set up pins.
 	MEMORY_CS_DESELECT;					// Init but don't assert yet.
 	memory_flags = 0;					// Clear memory flags.
@@ -214,10 +221,9 @@ void memoryTerminate(void) {
 
 
 /*
- * memoryFirstEmptySpot: Locates the start of the first empty page in memory.
- * This function was originally meant to allow multiple logs to be stored
- * simultaneously in memory, until it was decided not to implement this
- * as a feature.
+	memoryFirstEmptySpot: Locates the start of the first empty page in memory.
+	At the moment it's not clear whether tis is a useful or not function,
+	so I'll just leave it here.
  */
 uint16_t memoryFirstEmptySpot(uint16_t starting_spot) {
 	uint16_t empty_spot;
@@ -275,7 +281,9 @@ void memoryWriteStatusRegister2(uint8_t status) {
 }
 
 /*
- * memoryBusy: returns 1 if memory is busy, 0 if it is available.
+	memoryBusy: returns 1 if memory is busy, 0 if it is available.
+	There should probably be one function that retrieves regiter and checks,
+	and one that checkes already retrieved register.
  */
 _Bool memoryBusy(void) {
 	MEMORY_CS_SELECT;
@@ -289,9 +297,7 @@ _Bool memoryBusy(void) {
  *	clocking in the opcode 79h, and then deasserting the CS pin. (AT25DN512C DS p.25).
  */
 void memoryUltraDeepPowerDownEnter() {
-	MEMORY_CS_SELECT;
-	spiTradeByte(MEMORY_ULTRA_DEEP_POWER_DOWN);
-	MEMORY_CS_DESELECT;
+	_memorySingleCommand(MEMORY_ULTRA_DEEP_POWER_DOWN);
 }
 
 /*
@@ -303,9 +309,7 @@ void memoryUltraDeepPowerDownEnter() {
  *	being ignored.
  */
 void memoryUltraDeepPowerDownExit() {
-	MEMORY_CS_SELECT;
-	spiTradeByte(0xDD);
-	MEMORY_CS_DESELECT;
+	_memorySingleCommand(0xDD);
 	// Wait for tXUDPD?
 }
 

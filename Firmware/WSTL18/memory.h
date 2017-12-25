@@ -31,7 +31,7 @@
 #define MEMORY_CS_DESELECT		PORTB |= (1 << PORTB2)			// Set CS pin HIGH
 
 
-void memoryInit(void);
+void memoryInitialize(void);
 void memoryTerminate(void);
 uint16_t memoryFirstEmptySpot(uint16_t starting_spot);
 void memoryReadStatusRegisters(void);								// Read status registers
