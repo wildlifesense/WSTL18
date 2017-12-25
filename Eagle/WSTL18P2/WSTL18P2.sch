@@ -1058,7 +1058,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <library name="Connectors">
 <packages>
 <package name="4_PIN_0.1INCH_POGO_PADS_ANGLE">
-<smd name="1" x="0" y="2.54" dx="1.27" dy="1.27" layer="1" roundness="100"/>
+<smd name="1" x="-2.54" y="2.54" dx="1.27" dy="1.27" layer="1" roundness="100"/>
 <smd name="2" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100"/>
 <smd name="3" x="-2.54" y="0" dx="1.27" dy="1.27" layer="1" roundness="100"/>
 <smd name="4" x="-5.08" y="0" dx="1.27" dy="1.27" layer="1" roundness="100"/>
@@ -1448,11 +1448,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="48.26" y1="22.86" x2="50.8" y2="22.86" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="GND11" gate="1" pin="GND"/>
-<pinref part="UART" gate="G$1" pin="4"/>
-<wire x1="116.84" y1="45.72" x2="119.38" y2="45.72" width="0.1524" layer="91"/>
-</segment>
-<segment>
 <pinref part="GND8" gate="1" pin="GND"/>
 <pinref part="R5" gate="G$1" pin="2"/>
 </segment>
@@ -1478,8 +1473,13 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="GND10" gate="1" pin="GND"/>
 <wire x1="193.04" y1="-22.86" x2="193.04" y2="-20.32" width="0.1524" layer="91"/>
 </segment>
+<segment>
+<pinref part="GND11" gate="1" pin="GND"/>
+<pinref part="UART" gate="G$1" pin="4"/>
+<wire x1="116.84" y1="45.72" x2="119.38" y2="45.72" width="0.1524" layer="91"/>
+</segment>
 </net>
-<net name="N$3" class="0">
+<net name="AREF" class="0">
 <segment>
 <pinref part="C3" gate="G$1" pin="1"/>
 <pinref part="MCU" gate="A" pin="AREF"/>
@@ -1565,9 +1565,9 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <segment>
 <pinref part="R4" gate="G$1" pin="2"/>
 <pinref part="MCU" gate="A" pin="PD2"/>
-<wire x1="86.36" y1="45.72" x2="104.14" y2="45.72" width="0.1524" layer="91"/>
-<wire x1="104.14" y1="45.72" x2="109.22" y2="40.64" width="0.1524" layer="91"/>
-<wire x1="109.22" y1="40.64" x2="139.7" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="45.72" x2="106.68" y2="45.72" width="0.1524" layer="91"/>
+<wire x1="106.68" y1="45.72" x2="111.76" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="111.76" y1="40.64" x2="139.7" y2="40.64" width="0.1524" layer="91"/>
 <wire x1="139.7" y1="40.64" x2="142.24" y2="43.18" width="0.1524" layer="91"/>
 <pinref part="TMP" gate="G$1" pin="OS"/>
 <wire x1="160.02" y1="50.8" x2="154.94" y2="50.8" width="0.1524" layer="91"/>
