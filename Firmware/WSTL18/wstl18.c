@@ -85,7 +85,7 @@ void wstl18Init(void) {
 	//uartEnable();					// Start the uart module. Should this be here?
 	//twiInit();
 	max30205Enable();				// Set up the MAX30205 temperature logger.
-	memoryInit();				// Set up AT25DN512C and put to sleep.
+	memoryInitialize();				// Set up AT25DN512C and put to sleep.
 }
 
 void wstl18Sleep(void) {
@@ -192,7 +192,15 @@ void wstl18DumpAllMemory(void) {
 	// 
 }
 
-
-uint16_t wstl18GetTemperature(void) {
-	
+/*
+	wstl18GetTemperature: Gets the temperature from the temperature logger in a non-optimized way.
+	Using a timer to wait for the temperature conversion will introduce some uncertainty in control.
+	It might just be best, at least for now, to utilize these 50ms to do something else, such as
+	wake up the memory module or do some checks in preparation. If this works well and the timing is
+	ok, I might just as well keep it like this.
+*/
+uint16_t wstl18DoLog(void) {
+	max30205StartOneShot();
+	_delay_ms(50);	//Max 50ms. Try to do other stuff here and reduce delay accordingly.
+	return max30205ReadTemperature();
 }
