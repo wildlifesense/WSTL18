@@ -327,16 +327,17 @@ void memoryUltraDeepPowerDownExit() {
  */
 uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 	uint16_t memory_busy_counter = 0;
-	while(memoryBusy() && (memory_busy_counter < 1000)) {
+	while(memoryBusy() && (memory_busy_counter < 1000)) {	// Wait until memory is not busy.
 		++memory_busy_counter;	// Should be careful not to get stuck here.
 	}
-	if (memory_busy_counter > 14990) {
+	if (memory_busy_counter > 990) {
 		_memoryFlagSet(MEMORY_FLAG_BUSY_TIMEOUT);
 		// TODO: If memory keeps being busy, the log should stop.
 		return memory_flags;
 	}
 	//
 	_memorySingleCommand(MEMORY_WRITE_ENABLE);
+	// Turn the following into a function
 	MEMORY_CS_SELECT;
 	spiTradeByte(MEMORY_PROGRAM);
 	_memorySendAddress(memory_next_log_location);
@@ -344,9 +345,11 @@ uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 	spiTradeByte((uint8_t) temperature_reading>>8);
 	spiTradeByte((uint8_t) temperature_reading);
 	MEMORY_CS_DESELECT;	
-	_memorySingleCommand(MEMORY_WRITE_DISABLE);
+	_memorySingleCommand(MEMORY_WRITE_DISABLE);		// (Nikos) This may be unnecessary, chip does automatically?
 	
 	// Memory full. TODO: Should stop logging.
+	// Should this be done here or before logging?
+	//   Here is best as it prevents another 10-minute wait to realize.
 	if (memory_next_log_location > 0xFFFD) {
 		_memoryFlagSet(MEMORY_FLAG_FULL);
 	}
