@@ -55,12 +55,19 @@
 
 
 // Flash parameters
-#define MEMORY_ARRAY_ADDRESS_FIRST	0x000000	// Address of first byte in memory array. Can be moved up to make room for settings.
-#define MEMORY_ARRAY_ADDRESS_LAST	0x00FFFF	// Address of last byte in memory array.
+#define MEMORY_ARRAY_ADDRESS_FIRST		0x000000	// Address of first byte in memory array. Can be moved up to make room for settings.
+#define MEMORY_ARRAY_ADDRESS_LAST		0x00FFFF	// Address of last byte in memory array.
+#define MEMORY_GET_BYTE(ADDRESS)		(0xFF & ADDRESS)			// Return byte within page, 0x00-0xFF
+#define MEMORY_GET_PAGE(ADDRESS)		((0xFF00 & ADDRESS) >> 8)	// Return page, 0x00-0xFF
+
 #define MEMORY_BUSY_LIMIT	1000				// "Busy" status time read before flagging. 
 uint16_t memory_next_log_location;				// Where will the next temperature log be stored? Should be even number.
 uint8_t memory_status_byte_1;					// Every time Status Register 1 is read, it's also saved here.
 uint8_t memory_status_byte_2;					// Every time Status Register 2 is read, it's also saved here.
+
+
+
+
 // Read commands
 //													address	Dummy	Data	MHz
 #define	MEMORY_READ_ARRAY_FAST		0x0B		//	3		1		1+		104
@@ -308,7 +315,7 @@ void memoryUltraDeepPowerDownEnter() {
  *	must wait for tXUDPD (70us) before sending another command, or risk that command
  *	being ignored.
  */
-void memoryUltraDeepPowerDownExit() {
+void memoryUltraDeepPowerDownExit(void) {
 	_memorySingleCommand(0xDD);
 	// Wait for tXUDPD?
 }
