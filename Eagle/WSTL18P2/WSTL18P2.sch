@@ -1262,6 +1262,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="139.7" y1="60.96" x2="160.02" y2="60.96" width="0.1524" layer="91"/>
 <junction x="139.7" y="60.96"/>
 </segment>
+<segment>
+<pinref part="CON4" gate="G$1" pin="1"/>
+<wire x1="195.58" y1="-7.62" x2="182.88" y2="-7.62" width="0.1524" layer="91"/>
+<label x="182.88" y="-7.62" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="SCL0" class="2">
 <segment>
@@ -1273,6 +1278,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="147.32" y1="58.42" x2="147.32" y2="55.88" width="0.1524" layer="91"/>
 <wire x1="147.32" y1="63.5" x2="147.32" y2="58.42" width="0.1524" layer="91"/>
 <junction x="147.32" y="58.42"/>
+</segment>
+<segment>
+<pinref part="CON4" gate="G$1" pin="2"/>
+<wire x1="195.58" y1="-10.16" x2="182.88" y2="-10.16" width="0.1524" layer="91"/>
+<label x="182.88" y="-10.16" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="RESET" class="2">
