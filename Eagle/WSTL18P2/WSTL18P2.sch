@@ -606,6 +606,8 @@
 <pad name="BATT2" x="-10.414" y="-1.524" drill="0.8382" shape="octagon" rot="R270"/>
 <pad name="BATT3" x="10.414" y="-1.524" drill="0.8382" shape="octagon" rot="R90"/>
 <pad name="BATT4" x="10.414" y="1.524" drill="0.8382" shape="octagon" rot="R180"/>
+<smd name="BATT5" x="-10.795" y="0" dx="5.08" dy="1.27" layer="1" roundness="20" rot="R90"/>
+<smd name="BATT6" x="10.795" y="0" dx="5.08" dy="1.27" layer="1" roundness="20" rot="R270"/>
 </package>
 </packages>
 <symbols>
@@ -632,7 +634,7 @@
 <devices>
 <device name="" package="CR2032-LINX-M-THM">
 <connects>
-<connect gate="G$1" pin="BATT" pad="BATT1 BATT2 BATT3 BATT4"/>
+<connect gate="G$1" pin="BATT" pad="BATT1 BATT2 BATT3 BATT4 BATT5 BATT6"/>
 <connect gate="G$1" pin="GND" pad="GND GND1"/>
 </connects>
 <technologies>
