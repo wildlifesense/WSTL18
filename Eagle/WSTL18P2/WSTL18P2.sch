@@ -558,10 +558,12 @@
 <packages>
 <package name="ABS07AIG">
 <description>Abracon ABS07AIG</description>
-<smd name="P$1" x="0" y="1.275" dx="1.8" dy="1" layer="1"/>
-<smd name="P$2" x="0" y="-1.275" dx="1.8" dy="1" layer="1"/>
+<smd name="P$1" x="0" y="1.275" dx="1.8" dy="1" layer="1" cream="no"/>
+<smd name="P$2" x="0" y="-1.275" dx="1.8" dy="1" layer="1" cream="no"/>
 <text x="-1.8" y="1.9" size="0.8128" layer="25" font="vector">&gt;NAME</text>
 <text x="-1.8" y="-2.8" size="0.8128" layer="25" font="vector">&gt;VALUE</text>
+<rectangle x1="-0.5" y1="0.8" x2="0.5" y2="1.5" layer="31"/>
+<rectangle x1="-0.5" y1="-1.5" x2="0.5" y2="-0.8" layer="31" rot="R180"/>
 </package>
 </packages>
 <symbols>
@@ -932,14 +934,14 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <packages>
 <package name="TSSSOP-8">
 <description>TSSSOP-8 package in accordance to JEDEC MO-153 variation AA</description>
-<smd name="1" x="-2.825" y="0.975" dx="1.45" dy="0.35" layer="1"/>
-<smd name="2" x="-2.825" y="0.325" dx="1.45" dy="0.35" layer="1"/>
-<smd name="3" x="-2.825" y="-0.325" dx="1.45" dy="0.35" layer="1"/>
-<smd name="4" x="-2.825" y="-0.975" dx="1.45" dy="0.35" layer="1"/>
-<smd name="5" x="2.825" y="-0.975" dx="1.45" dy="0.35" layer="1" rot="R180"/>
-<smd name="6" x="2.825" y="-0.325" dx="1.45" dy="0.35" layer="1" rot="R180"/>
-<smd name="7" x="2.825" y="0.325" dx="1.45" dy="0.35" layer="1" rot="R180"/>
-<smd name="8" x="2.825" y="0.975" dx="1.45" dy="0.35" layer="1" rot="R180"/>
+<smd name="1" x="-2.825" y="0.975" dx="1.45" dy="0.35" layer="1" cream="no"/>
+<smd name="2" x="-2.825" y="0.325" dx="1.45" dy="0.35" layer="1" cream="no"/>
+<smd name="3" x="-2.825" y="-0.325" dx="1.45" dy="0.35" layer="1" cream="no"/>
+<smd name="4" x="-2.825" y="-0.975" dx="1.45" dy="0.35" layer="1" cream="no"/>
+<smd name="5" x="2.825" y="-0.975" dx="1.45" dy="0.35" layer="1" rot="R180" cream="no"/>
+<smd name="6" x="2.825" y="-0.325" dx="1.45" dy="0.35" layer="1" rot="R180" cream="no"/>
+<smd name="7" x="2.825" y="0.325" dx="1.45" dy="0.35" layer="1" rot="R180" cream="no"/>
+<smd name="8" x="2.825" y="0.975" dx="1.45" dy="0.35" layer="1" rot="R180" cream="no"/>
 <wire x1="-2.2" y1="-1.5" x2="2.2" y2="-1.5" width="0.127" layer="21"/>
 <wire x1="2.2" y1="-1.5" x2="2.2" y2="-1.3" width="0.127" layer="21"/>
 <wire x1="-2.2" y1="-1.5" x2="-2.2" y2="-1.3" width="0.127" layer="21"/>
@@ -951,6 +953,14 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="-1.2" y1="1.4" x2="-2" y2="0.6" width="0.127" layer="21"/>
 <text x="-0.1" y="2.4" size="0.8128" layer="25" font="vector" ratio="12" align="center">&gt;NAME</text>
 <text x="-0.2" y="-2.6" size="0.8128" layer="27" font="vector" ratio="12" align="center">&gt;VALUE</text>
+<rectangle x1="-2.99" y1="0.845" x2="-2.145" y2="1.105" layer="31"/>
+<rectangle x1="-2.99" y1="0.195" x2="-2.145" y2="0.455" layer="31"/>
+<rectangle x1="-2.99" y1="-0.455" x2="-2.145" y2="-0.195" layer="31"/>
+<rectangle x1="-2.99" y1="-1.105" x2="-2.145" y2="-0.845" layer="31"/>
+<rectangle x1="2.145" y1="-1.105" x2="2.99" y2="-0.845" layer="31" rot="R180"/>
+<rectangle x1="2.145" y1="-0.455" x2="2.99" y2="-0.195" layer="31" rot="R180"/>
+<rectangle x1="2.145" y1="0.195" x2="2.99" y2="0.455" layer="31" rot="R180"/>
+<rectangle x1="2.145" y1="0.845" x2="2.99" y2="1.105" layer="31" rot="R180"/>
 </package>
 </packages>
 <symbols>
@@ -1177,7 +1187,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="VCC" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="GND11" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="VCC5" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
-<part name="VCC6" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="VCC2" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="VCC3" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="VCC4" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
@@ -1253,9 +1262,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <instance part="VCC" gate="G$1" x="-76.2" y="76.2"/>
 <instance part="GND11" gate="1" x="114.3" y="45.72" rot="R270"/>
 <instance part="VCC5" gate="G$1" x="5.08" y="27.94"/>
-<instance part="VCC6" gate="G$1" x="-30.48" y="15.24" smashed="yes" rot="R90">
-<attribute name="VALUE" x="-34.036" y="16.256" size="1.778" layer="96"/>
-</instance>
 <instance part="VCC2" gate="G$1" x="154.94" y="81.28"/>
 <instance part="VCC3" gate="G$1" x="147.32" y="81.28"/>
 <instance part="VCC4" gate="G$1" x="139.7" y="81.28"/>
@@ -1369,16 +1375,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="2.54" y1="25.4" x2="5.08" y2="25.4" width="0.1524" layer="91"/>
 <wire x1="5.08" y1="27.94" x2="5.08" y2="25.4" width="0.1524" layer="91"/>
 <junction x="5.08" y="25.4"/>
-<pinref part="MEM" gate="G$1" pin="!HOLD!"/>
-<wire x1="2.54" y1="20.32" x2="5.08" y2="20.32" width="0.1524" layer="91"/>
-<wire x1="5.08" y1="20.32" x2="5.08" y2="25.4" width="0.1524" layer="91"/>
-<wire x1="5.08" y1="20.32" x2="5.08" y2="7.62" width="0.1524" layer="91"/>
-<junction x="5.08" y="20.32"/>
-</segment>
-<segment>
-<pinref part="VCC6" gate="G$1" pin="5V"/>
-<pinref part="MEM" gate="G$1" pin="!WP!"/>
-<wire x1="-27.94" y1="15.24" x2="-30.48" y2="15.24" width="0.1524" layer="91"/>
+<wire x1="5.08" y1="25.4" x2="5.08" y2="7.62" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="VCC" gate="G$1" pin="5V"/>
