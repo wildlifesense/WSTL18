@@ -600,8 +600,7 @@
 <library name="Battery_holders">
 <packages>
 <package name="CR2032-LINX-M-THM">
-<smd name="GND" x="3.81" y="0" dx="2.54" dy="9.144" layer="1" roundness="20"/>
-<smd name="GND1" x="-3.81" y="0" dx="2.54" dy="9.144" layer="1" roundness="20"/>
+<smd name="GND" x="0" y="0" dx="5.08" dy="5.08" layer="1" roundness="100"/>
 <pad name="BATT1" x="-10.414" y="1.524" drill="0.8382" shape="octagon" rot="R270"/>
 <pad name="BATT2" x="-10.414" y="-1.524" drill="0.8382" shape="octagon" rot="R270"/>
 <pad name="BATT3" x="10.414" y="-1.524" drill="0.8382" shape="octagon" rot="R90"/>
@@ -635,7 +634,7 @@
 <device name="" package="CR2032-LINX-M-THM">
 <connects>
 <connect gate="G$1" pin="BATT" pad="BATT1 BATT2 BATT3 BATT4 BATT5 BATT6"/>
-<connect gate="G$1" pin="GND" pad="GND GND1"/>
+<connect gate="G$1" pin="GND" pad="GND"/>
 </connects>
 <technologies>
 <technology name=""/>
