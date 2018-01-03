@@ -1,5 +1,5 @@
-# WSTL18 firmware
-Firmware for the WSTL18 temperature logger.
+# WSTL18 Firmware and Eagle files
+Firmware and Eagle files for the WSTL18 temperature logger.
 
 The WSTL18 is a temperature logger developed at Wildlife Sense
 for sea turtle nest incubation research. It is powered by a CR2032
@@ -12,6 +12,6 @@ https://hackaday.io/project/27560-low-costpowersize-temperature-logger
 
 Copyright (C) 2017 Nikos Vallianos
 
-The WSTL18 firmware is released under the GNU General Public License version 3
+The WSTL18 firmware and Eagle files are released under the GNU General Public License version 3
 (See COPYING for details).
 
