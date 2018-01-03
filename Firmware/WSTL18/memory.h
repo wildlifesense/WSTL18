@@ -33,7 +33,7 @@
 
 void memoryInitialize(void);
 void memoryTerminate(void);
-uint16_t memoryFirstEmptySpot(uint16_t starting_spot);
+uint8_t memoryScan(uint8_t starting_page);
 void memoryReadStatusRegisters(void);								// Read status registers
 void memoryWriteStatusRegister1(uint8_t status);					// Write status register 1
 void memoryWriteStatusRegister2(uint8_t status);					// Write status register 2

@@ -57,6 +57,10 @@
 // Flash parameters
 #define MEMORY_ARRAY_ADDRESS_FIRST		0x000000	// Address of first byte in memory array. Can be moved up to make room for settings.
 #define MEMORY_ARRAY_ADDRESS_LAST		0x00FFFF	// Address of last byte in memory array.
+#define MEMORY_PAGE_FIRST				0x00		// Number of first page in memory array used.
+#define MEMORY_PAGE_LAST				0xFF		// Number of last page in memory array used.
+#define MEMORY_PAGE_SIZE_BYTES			0xFF
+
 #define MEMORY_GET_BYTE(ADDRESS)		(0xFF & ADDRESS)			// Return byte within page, 0x00-0xFF
 #define MEMORY_GET_PAGE(ADDRESS)		((0xFF00 & ADDRESS) >> 8)	// Return page, 0x00-0xFF
 
@@ -153,21 +157,23 @@ void _memorySingleCommand(uint8_t command) {
 	spiTradeByte(command);
 	MEMORY_CS_DESELECT;
 }
-// Send a 3-byte address to the flash unit
+/*
+ *  _memorySendAddress: Send a 3-byte address to the flash unit. This function takes a
+ *	two-byte input and adds the third 0x00 since that's always 0x00 on this module.
+ */
 void _memorySendAddress(uint16_t address) {
-	spiTradeByte((uint8_t) address>>16);			// Send most significant byte first.
-	spiTradeByte((uint8_t) address>>8);				// Then send middle significant byte.
-	spiTradeByte((uint8_t) address);				// Then send least significant byte.
+	uint8_t address_page = (uint8_t)(address>>8);
+	uint8_t address_byte = (uint8_t) address;
+	spiTradeByte(0x00);								// Send most significant byte first.
+	spiTradeByte(address_page);						// Then send middle significant byte.
+	spiTradeByte(address_byte);						// Then send least significant byte.
 }
+
 
 /*
  *	_memorySendDummy: Send dummy_size zeros over to the flash memory.
  */
 void _memorySendDummy(uint8_t dummy_size) {
-	if (dummy_size > 254) {								// Prevent infinite loop.
-		_memoryFlagSet(MEMORY_FLAG_FIRMWARE_ERROR);
-		return;
-	}
 	for (uint8_t i=0; i<dummy_size; ++i) {
 		spiTradeByte(0);
 	}
@@ -195,6 +201,7 @@ void _memoryFlagClear(uint8_t flag_position) {
 void _memoryFlagClearAll(void) {
 	memory_flags = 0;
 }
+
 /*********************** End Internal Functions *******************************/
 
 
@@ -208,7 +215,7 @@ void memoryInitialize(void) {
 	MEMORY_CS_INIT;						// Set up pins.
 	MEMORY_CS_DESELECT;					// Init but don't assert yet.
 	memory_flags = 0;					// Clear memory flags.
-	memory_next_log_location = 0;		// Replace this with a memory scan.
+	memory_next_log_location = 0;		// Replace this with a memory scan. Power-cycle shouldn't overwrite existing records.
 	memory_status_byte_1 = 0;			// Replace this with reading status register.
 	memory_status_byte_2 = 0;			// //--//
 	// A bit more to do here.
@@ -228,31 +235,41 @@ void memoryTerminate(void) {
 
 
 /*
-	memoryFirstEmptySpot: Locates the start of the first empty page in memory.
-	At the moment it's not clear whether tis is a useful or not function,
-	so I'll just leave it here.
+	memoryScan: Iterates through each memory page for these things:
+		Does the memory contain previous data?
+		Are previous records complete? (With valid starting and ending markers)
+		How many previous records are there?
+		Is the memory full? How many pages are available?
+		
+	This is useful in case of an unexpected power-cycle.
+	
  */
-uint16_t memoryFirstEmptySpot(uint16_t starting_spot) {
-	uint16_t empty_spot;
+uint8_t memoryScan(uint8_t starting_page) {
+	uint8_t next_empty_page;
 	uint8_t memory_array_byte;
-	if (starting_spot < MEMORY_ARRAY_ADDRESS_FIRST) {
-		starting_spot = MEMORY_ARRAY_ADDRESS_FIRST;
+	if (starting_page < MEMORY_PAGE_FIRST) {		// Prevent scanning before fist used page.
+		starting_page = MEMORY_PAGE_FIRST;
 	}
+	if (starting_page >= )
 	MEMORY_CS_SELECT;
 	spiTradeByte(MEMORY_READ_ARRAY_SLOW);
-	_memorySendAddress(starting_spot);
+	_memorySendAddress(starting_page);
 	// Start reading from starting_spot
-	while(starting_spot <= MEMORY_ARRAY_ADDRESS_LAST) {
+	while(starting_page <= MEMORY_ARRAY_ADDRESS_LAST) {
 		memory_array_byte = spiTradeByte(0);
 		if (memory_array_byte != 0xFF) {
-			empty_spot = starting_spot;
+			next_empty_page = starting_page;
 		}
-		++starting_spot;
+		++starting_page;
 	}
-	return(empty_spot);
+	return(next_empty_page);
 }
 
 
+/*
+ *	memoryReadStatusRegisters: Read the status registers of the memory chip
+ *	and store them in this module's variables.
+ */
 void memoryReadStatusRegisters(void) {
 	MEMORY_CS_SELECT;
 	spiTradeByte(MEMORY_READ_STATUS_REGISTER);
@@ -320,45 +337,51 @@ void memoryUltraDeepPowerDownExit(void) {
 	// Wait for tXUDPD?
 }
 
+
+
 /*
- * memoryLogTemperature: Takes a 16-bit temperature and writes it at the next location on memory.
- * This function also checks that the device is not busy and at the end advances the next location
- * pointer by two positions.
- * After writing the data, this function checks the device's status registers to ensure the
- * write was successful.
- * Optionally can check that the current byte is an 0xFF and flag if it isn't.
+ * memoryLogTemperature:
+ *		This function also checks that the device is not busy
+ *		Takes a 16-bit temperature and writes it at the next location on memory.
+ *		at the end advances the next location pointer by two positions.
+ *		After writing the data, this function checks the device's status registers to ensure the write was successful.
+ *		Optionally can check that the current byte is an 0xFF and flag if it isn't.
  *
  *	Returns:
- *		0 to indicate no error occurred.
- *		Copy of memory_flags to indicate an error occurred.
+ *		TODO: What should this return?
  */
 uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 	uint16_t memory_busy_counter = 0;
-	while(memoryBusy() && (memory_busy_counter < 1000)) {	// Wait until memory is not busy.
-		++memory_busy_counter;	// Should be careful not to get stuck here.
+	while(memoryBusy() && (memory_busy_counter < MEMORY_BUSY_LIMIT)) {	// Wait until memory is not busy.
+		++memory_busy_counter;
 	}
-	if (memory_busy_counter > 990) {
+	if (memory_busy_counter >= MEMORY_BUSY_LIMIT) {
 		_memoryFlagSet(MEMORY_FLAG_BUSY_TIMEOUT);
 		// TODO: If memory keeps being busy, the log should stop.
-		return memory_flags;
+		return 0;
+		} else {	// Write data to memory.
+		uint8_t data_msb = (uint8_t) (temperature_reading>>8);
+		uint8_t data_lsb = (uint8_t) temperature_reading;
+		_memorySingleCommand(MEMORY_WRITE_ENABLE);
+		// Turn the following into a function
+		MEMORY_CS_SELECT;
+		spiTradeByte(MEMORY_PROGRAM);
+		_memorySendAddress(write_location);
+		// No dummy needed for writing.
+		spiTradeByte((uint8_t) data_msb);
+		spiTradeByte((uint8_t) data_lsb);
+		MEMORY_CS_DESELECT;
+		_memorySingleCommand(MEMORY_WRITE_DISABLE);		// (Nikos) This may be unnecessary if chip does it automatically. Check.
+		return 1;
 	}
-	//
-	_memorySingleCommand(MEMORY_WRITE_ENABLE);
-	// Turn the following into a function
-	MEMORY_CS_SELECT;
-	spiTradeByte(MEMORY_PROGRAM);
-	_memorySendAddress(memory_next_log_location);
-	// No dummy needed for writing.
-	spiTradeByte((uint8_t) temperature_reading>>8);
-	spiTradeByte((uint8_t) temperature_reading);
-	MEMORY_CS_DESELECT;	
-	_memorySingleCommand(MEMORY_WRITE_DISABLE);		// (Nikos) This may be unnecessary, chip does automatically?
 	
-	// Memory full. TODO: Should stop logging.
-	// Should this be done here or before logging?
-	//   Here is best as it prevents another 10-minute wait to realize.
-	if (memory_next_log_location > 0xFFFD) {
+
+
+	if (memory_next_log_location >= (MEMORY_ARRAY_ADDRESS_LAST-1)) {
 		_memoryFlagSet(MEMORY_FLAG_FULL);
+	} else {
+		memory_next_log_location += 2;			// TODO: Caution: 16-bit number may loop to 0.
+
 	}
 	return 1;
 }

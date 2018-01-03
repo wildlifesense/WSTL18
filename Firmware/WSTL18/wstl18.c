@@ -193,7 +193,7 @@ void wstl18DumpAllMemory(void) {
 }
 
 /*
-	wstl18GetTemperature: Gets the temperature from the temperature logger in a non-optimized way.
+	wstl18DoLog: Gets the temperature from the temperature logger in a non-optimized way.
 	Using a timer to wait for the temperature conversion will introduce some uncertainty in control.
 	It might just be best, at least for now, to utilize these 50ms to do something else, such as
 	wake up the memory module or do some checks in preparation. If this works well and the timing is
