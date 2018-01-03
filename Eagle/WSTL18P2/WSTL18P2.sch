@@ -646,6 +646,18 @@
 </library>
 <library name="Passives">
 <packages>
+<package name="RES_0402">
+<smd name="2" x="0.45" y="0" dx="0.4" dy="0.6" layer="1"/>
+<smd name="1" x="-0.45" y="0" dx="0.4" dy="0.6" layer="1"/>
+<text x="0" y="1.27" size="0.8128" layer="25" font="vector" ratio="12" align="center">&gt;NAME</text>
+<text x="0" y="-1.27" size="0.8128" layer="27" font="vector" ratio="12" align="center">&gt;VALUE</text>
+</package>
+<package name="CAP_0402">
+<smd name="1" x="-0.475" y="0" dx="0.45" dy="0.5" layer="1"/>
+<smd name="2" x="0.475" y="0" dx="0.45" dy="0.5" layer="1"/>
+<text x="0" y="1.27" size="0.8128" layer="25" font="vector" ratio="12" align="center">&gt;NAME</text>
+<text x="0" y="-1.27" size="0.8128" layer="27" font="vector" ratio="12" align="center">&gt;VALUE</text>
+</package>
 <package name="RES_CAP_0201">
 <smd name="1" x="-0.22" y="0" dx="0.21" dy="0.3" layer="1"/>
 <smd name="2" x="0.22" y="0" dx="0.21" dy="0.3" layer="1" rot="R180"/>
@@ -713,6 +725,22 @@
 </symbol>
 </symbols>
 <devicesets>
+<deviceset name="CAP_0402_CERAMIC" prefix="C">
+<gates>
+<gate name="G$1" symbol="CAP_CERAMIC" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="CAP_0402">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
 <deviceset name="CAP_0201_CERAMIC">
 <gates>
 <gate name="G$1" symbol="CAP_CERAMIC" x="0" y="0"/>
@@ -729,12 +757,12 @@
 </device>
 </devices>
 </deviceset>
-<deviceset name="RES_0201_CERAMIC">
+<deviceset name="RES_0402_CERAMIC" prefix="R">
 <gates>
-<gate name="G$1" symbol="RES_CERAMIC" x="0" y="0"/>
+<gate name="G$1" symbol="RES_CERAMIC" x="5.08" y="0"/>
 </gates>
 <devices>
-<device name="" package="RES_CAP_0201">
+<device name="" package="RES_0402">
 <connects>
 <connect gate="G$1" pin="1" pad="1"/>
 <connect gate="G$1" pin="2" pad="2"/>
@@ -1128,19 +1156,19 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="TMP" library="MAX30205" deviceset="MAX30205" device=""/>
 <part name="GND4" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="MEM" library="Memory" deviceset="AT25DN512C-XMHF-B" device=""/>
-<part name="C4" library="Passives" deviceset="CAP_0201_CERAMIC" device="" value="0.1uF"/>
-<part name="C5" library="Passives" deviceset="CAP_0201_CERAMIC" device="" value="0.1uF"/>
+<part name="C4" library="Passives" deviceset="CAP_0402_CERAMIC" device="" value="0.1uF"/>
+<part name="C5" library="Passives" deviceset="CAP_0402_CERAMIC" device="" value="0.1uF"/>
 <part name="GND2" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="GND5" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="GND6" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="GND7" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
-<part name="R2" library="Passives" deviceset="RES_0201_CERAMIC" device="" value="4.7k"/>
-<part name="R3" library="Passives" deviceset="RES_0201_CERAMIC" device="" value="4.7k"/>
-<part name="R1" library="Passives" deviceset="RES_0201_CERAMIC" device="" value="10k"/>
+<part name="R2" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="4.7k"/>
+<part name="R3" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="4.7k"/>
+<part name="R1" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="10k"/>
 <part name="LED0" library="Passives" deviceset="LED_0402" device=""/>
 <part name="GND8" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
-<part name="R5" library="Passives" deviceset="RES_0201_CERAMIC" device="" value="1k"/>
-<part name="R4" library="Passives" deviceset="RES_0201_CERAMIC" device="" value="4.7k"/>
+<part name="R5" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="1k"/>
+<part name="R4" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="4.7k"/>
 <part name="CON1" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
 <part name="CON2" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
 <part name="CON3" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
@@ -1157,6 +1185,10 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="UART" library="Connectors" deviceset="4_PIN_0.1_INCH_POGO_CONN_ANGLE" device=""/>
 <part name="U$1" library="Battery_holders" deviceset="LINX-CR2032-BAT-HLD-M-THM" device=""/>
 <part name="TWI" library="AVR_ISP_127" deviceset="1X2CONN1.27" device=""/>
+<part name="C6" library="Passives" deviceset="CAP_0402_CERAMIC" device=""/>
+<part name="C7" library="Passives" deviceset="CAP_0402_CERAMIC" device=""/>
+<part name="GND10" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
+<part name="GND12" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -1164,7 +1196,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </plain>
 <instances>
 <instance part="MCU" gate="A" x="68.58" y="48.26"/>
-<instance part="T1" gate="G$1" x="33.02" y="27.94" smashed="yes" rot="R90"/>
+<instance part="T1" gate="G$1" x="30.48" y="27.94" smashed="yes" rot="R90"/>
 <instance part="C1" gate="G$1" x="43.18" y="71.12" smashed="yes" rot="R270">
 <attribute name="NAME" x="39.116" y="72.517" size="1.778" layer="95" align="center"/>
 <attribute name="VALUE" x="46.482" y="72.517" size="1.778" layer="96" align="center"/>
@@ -1191,7 +1223,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <instance part="GND2" gate="1" x="-30.48" y="5.08"/>
 <instance part="GND5" gate="1" x="5.08" y="-5.08"/>
 <instance part="GND6" gate="1" x="195.58" y="45.72"/>
-<instance part="GND7" gate="1" x="48.26" y="15.24"/>
+<instance part="GND7" gate="1" x="48.26" y="7.62"/>
 <instance part="R2" gate="G$1" x="139.7" y="68.58" smashed="yes" rot="R90">
 <attribute name="NAME" x="138.2014" y="64.77" size="1.778" layer="95" rot="R90"/>
 <attribute name="VALUE" x="137.922" y="69.85" size="1.778" layer="96" rot="R90"/>
@@ -1231,6 +1263,10 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <instance part="UART" gate="G$1" x="124.46" y="48.26"/>
 <instance part="U$1" gate="G$1" x="-76.2" y="58.42"/>
 <instance part="TWI" gate="G$1" x="127" y="78.74" rot="R90"/>
+<instance part="C6" gate="G$1" x="17.78" y="22.86"/>
+<instance part="C7" gate="G$1" x="43.18" y="22.86"/>
+<instance part="GND10" gate="1" x="43.18" y="12.7"/>
+<instance part="GND12" gate="1" x="17.78" y="12.7"/>
 </instances>
 <busses>
 </busses>
@@ -1242,15 +1278,23 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="48.26" y1="30.48" x2="45.72" y2="27.94" width="0.1524" layer="91"/>
 <pinref part="T1" gate="G$1" pin="2"/>
 <wire x1="45.72" y1="27.94" x2="43.18" y2="27.94" width="0.1524" layer="91"/>
+<pinref part="C7" gate="G$1" pin="1"/>
+<wire x1="43.18" y1="27.94" x2="40.64" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="25.4" x2="43.18" y2="27.94" width="0.1524" layer="91"/>
+<junction x="43.18" y="27.94"/>
 </segment>
 </net>
 <net name="N$2" class="2">
 <segment>
 <pinref part="MCU" gate="A" pin="PB6"/>
 <pinref part="T1" gate="G$1" pin="1"/>
-<wire x1="50.8" y1="33.02" x2="20.32" y2="33.02" width="0.1524" layer="91"/>
-<wire x1="20.32" y1="33.02" x2="20.32" y2="27.94" width="0.1524" layer="91"/>
-<wire x1="20.32" y1="27.94" x2="22.86" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="50.8" y1="33.02" x2="15.24" y2="33.02" width="0.1524" layer="91"/>
+<wire x1="15.24" y1="33.02" x2="15.24" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="15.24" y1="27.94" x2="17.78" y2="27.94" width="0.1524" layer="91"/>
+<pinref part="C6" gate="G$1" pin="1"/>
+<wire x1="17.78" y1="27.94" x2="20.32" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="25.4" x2="17.78" y2="27.94" width="0.1524" layer="91"/>
+<junction x="17.78" y="27.94"/>
 </segment>
 </net>
 <net name="SDA0" class="2">
@@ -1435,7 +1479,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </segment>
 <segment>
 <pinref part="GND7" gate="1" pin="GND"/>
-<wire x1="48.26" y1="17.78" x2="48.26" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="48.26" y1="10.16" x2="48.26" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="MCU" gate="A" pin="AGND"/>
 <wire x1="48.26" y1="20.32" x2="50.8" y2="20.32" width="0.1524" layer="91"/>
 <wire x1="48.26" y1="20.32" x2="48.26" y2="22.86" width="0.1524" layer="91"/>
@@ -1467,6 +1511,16 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="GND11" gate="1" pin="GND"/>
 <pinref part="UART" gate="G$1" pin="4"/>
 <wire x1="116.84" y1="45.72" x2="119.38" y2="45.72" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="GND12" gate="1" pin="GND"/>
+<pinref part="C6" gate="G$1" pin="2"/>
+<wire x1="17.78" y1="15.24" x2="17.78" y2="17.78" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="GND10" gate="1" pin="GND"/>
+<pinref part="C7" gate="G$1" pin="2"/>
+<wire x1="43.18" y1="15.24" x2="43.18" y2="17.78" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="AREF" class="0">
