@@ -602,7 +602,7 @@
 <library name="Battery_holders">
 <packages>
 <package name="CR2032-LINX-M-THM">
-<smd name="GND" x="0" y="-0.635" dx="2.54" dy="6.35" layer="1" roundness="100"/>
+<smd name="GND" x="0" y="-1.905" dx="2.54" dy="8.89" layer="1" roundness="100"/>
 <pad name="BATT1" x="-10.414" y="1.524" drill="0.8382" shape="octagon" rot="R270"/>
 <pad name="BATT2" x="-10.414" y="-1.524" drill="0.8382" shape="octagon" rot="R270"/>
 <pad name="BATT3" x="10.414" y="-1.524" drill="0.8382" shape="octagon" rot="R90"/>
