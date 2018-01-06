@@ -1817,6 +1817,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <approved hash="102,1,147.32,81.28,5V,VCC,,,,"/>
 <approved hash="102,1,139.7,81.28,5V,VCC,,,,"/>
 <approved hash="102,1,48.26,76.2,5V,VCC,,,,"/>
+<approved hash="102,1,132.08,27.94,5V,VCC,,,,"/>
 <approved hash="104,1,50.8,66.04,MCU,AVCC,VCC,,,"/>
 </errors>
 </schematic>
