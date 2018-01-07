@@ -33,15 +33,8 @@ int main(void) {
 	DDRE |= (1<<DDRE2);
 	uart_listening = 0;
 	uartEnable();
-    while (1) 
-    {
-		PORTE |= (1<<PORTE2);
-		_delay_ms(5);
-		PORTE &= ~(1<<PORTE2);
-		_delay_ms(90);
-		PORTE |= (1<<PORTE2);
-		_delay_ms(5);
-		PORTE &= ~(1<<PORTE2);
+    while (1) {
+
 		uartSendByte('O');
 		_delay_ms(1900);
     }

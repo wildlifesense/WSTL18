@@ -204,3 +204,13 @@ uint16_t wstl18DoLog(void) {
 	_delay_ms(50);	//Max 50ms. Try to do other stuff here and reduce delay accordingly.
 	return max30205ReadTemperature();
 }
+
+void wstl18DoubleBlink(void) {
+	PORTE |= (1<<PORTE2);
+	_delay_ms(5);
+	PORTE &= ~(1<<PORTE2);
+	_delay_ms(90);
+	PORTE |= (1<<PORTE2);
+	_delay_ms(5);
+	PORTE &= ~(1<<PORTE2);
+}

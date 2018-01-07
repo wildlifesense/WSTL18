@@ -25,7 +25,6 @@
 #define WSTL18_H_
 
 void wstl18Init(void);
-
-
+void wstl18DoubleBlink(void);
 
 #endif /* WSTL18_H_ */
