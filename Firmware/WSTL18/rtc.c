@@ -36,7 +36,18 @@ uint32_t eightseconds_counter;			// Count of eight seconds intervals since start
 ISR(TIMER2_OVF_vect) {
 	rtcIntervalCounterIncrement();
 }
-
+/*
+// Initialize TC2 for Real Time Clock operation from external 32.768kHz crystal.
+void rtcInit(void) {
+	PRR0	&= ~(1<<PRTIM2);
+	ASSR	|= (1<<AS2);											// Clock from external crystal.
+	TCCR2B	|= (1<<CS20)|(1<<CS21)|(1<<CS22);						// Tosc/1024 prescaler = 8sec to overflow.
+	TIMSK2	= 0;
+	TIMSK2	|= (1<<TOIE2);											// Enable overflow interrupt
+	TCNT2	= 0;													// Clear counter value.
+	sei();
+}
+*/
 /*
  * rtcInit: Initialize TC2 for Real Time Clock operation from external 32.768kHz crystal.
  * The crystal should be allowed around 1000ms for stabilization before it is actually used.
