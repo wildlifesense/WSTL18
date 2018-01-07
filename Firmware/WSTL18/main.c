@@ -23,20 +23,26 @@
   ********************************************************************************/
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/sleep.h>
 #include "uart.h"
 #include "wstl18.h"
 
-uint8_t  uart_listening;				// This could move to the UART module.
 
 
 int main(void) {
-	DDRE |= (1<<DDRE2);
-	uart_listening = 0;
-	uartEnable();
-    while (1) {
+	wstl18Init();
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE);	// Define preferred sleep mode
+	sleep_enable();							// Stays here
 
-		uartSendByte('O');
-		_delay_ms(1900);
+    while (1) {
+		sleep_mode();
+		wstl18DoubleBlink();
+		// Check status of PC3
+		if (!(PINC & (1<<PINC3))) {
+			uartEnable();
+			_delay_ms(100);		// uart wouldn't work without this delay.
+			uartSendByte('0');
+			uartDisable();
+		}
     }
 }
-
