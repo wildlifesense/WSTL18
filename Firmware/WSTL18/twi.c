@@ -90,7 +90,7 @@ void twiDisable(void) {
 	TWCR0 &= ~(1<<TWEN);					// Disable TWI, may not be necessary
 	PRR0  |= (1<<PRTWI0);					// Stop TWI clock
 	PINC &= ~((1<<PINC4)|(1<<PINC5));		// Set TWI pins as inputs
-	PORTC |= ((1<<PINC4)|(1<<PINC5));		// Pull them up to reduce power consumption.
+	PORTC |= ((1<<PORTC4)|(1<<PORTC5));		// Pull them up to reduce power consumption.
 }
 
 
