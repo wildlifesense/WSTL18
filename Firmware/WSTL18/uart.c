@@ -35,7 +35,10 @@ ISR(USART0_RX_vect) {
 }
  */
 
-
+void _uartSetBaud9600(void) {
+	UBRR0 =  103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
+	UCSR0A |= (1<<U2X0);	
+}
 void _uartSetBaud1M(void) {
 	// I'm hard-setting baud rate to 1M.
 	// See table in DS p.249 for baud rate examples
@@ -53,9 +56,10 @@ void _uartSetBaud250k(void) {
 
 void uartEnable(void) {
 	PRR0 &= ~(1<<PRUSART0);
-	_uartSetBaud1M();
+	UBRR0 =  103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
+	UCSR0A |= (1<<U2X0);
 	UCSR0B |= (1 << RXEN0)|(1 << TXEN0);//|(1<<RXCIE0);		// Enable USART transmitter/receiver.
-	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);					// 8 data bits (plus 2 stop bits).
+	UCSR0C = (1 << UCSZ01)|(1 << UCSZ00);					// 8 data bits, 2 stop bits
 	//UCSR0D |= (1<<SFDE);									// Enable wakeup on RX interrupt (DS p.259)
 	//sei();												// Not using interrupts in WSTL18
 }
