@@ -250,7 +250,7 @@ uint8_t memoryScan(uint8_t starting_page) {
 	if (starting_page < MEMORY_PAGE_FIRST) {		// Prevent scanning before fist used page.
 		starting_page = MEMORY_PAGE_FIRST;
 	}
-	if (starting_page >= )
+	if (starting_page >= 0)
 	MEMORY_CS_SELECT;
 	spiTradeByte(MEMORY_READ_ARRAY_SLOW);
 	_memorySendAddress(starting_page);
@@ -366,7 +366,7 @@ uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 		// Turn the following into a function
 		MEMORY_CS_SELECT;
 		spiTradeByte(MEMORY_PROGRAM);
-		_memorySendAddress(write_location);
+		_memorySendAddress(0);//write_location); // TODO: Fix this mess
 		// No dummy needed for writing.
 		spiTradeByte((uint8_t) data_msb);
 		spiTradeByte((uint8_t) data_lsb);
