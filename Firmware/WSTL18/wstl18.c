@@ -79,6 +79,8 @@ void wstl18Init(void) {
 	PORTD = 0xFF;
 	DDRE  = ~((1<<DDRE0)|(1<<DDRE1)|(1<<DDRE2)|(1<<DDRE3));
 	PORTE = ((1<<PORTE0)|(1<<PORTE1)|(1<<PORTE2)|(1<<PORTE3));		// Port E is half a byte.
+//Digital input buffers can be disabled by writing to the Digital Input Disable Registers (DIDR0 for ADC, DIDR1 for AC). (found at http://microchipdeveloper.com/8avr:avrsleep)
+//If the On-chip debug system is enabled by the DWEN Fuse and the chip enters sleep mode, the main clock source is enabled and hence always consumes power. In the deeper sleep modes, this will contribute significantly to the total current consumption.
 
 	ledInit();
 	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
