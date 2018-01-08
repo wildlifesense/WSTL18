@@ -1026,20 +1026,20 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </library>
 <library name="AVR_ISP_127">
 <packages>
-<package name="1X6_1.27_ROUND">
-<pad name="6" x="6.35" y="0" drill="0.508" diameter="0.8128"/>
-<pad name="1" x="0" y="0" drill="0.508" diameter="0.8128"/>
-<pad name="5" x="5.08" y="0" drill="0.508" diameter="0.8128"/>
-<pad name="2" x="1.27" y="0" drill="0.508" diameter="0.8128"/>
-<pad name="4" x="3.81" y="0" drill="0.508" diameter="0.8128"/>
-<pad name="3" x="2.54" y="0" drill="0.508" diameter="0.8128" rot="R90"/>
-<text x="-1.27" y="0" size="0.8128" layer="25" font="vector" ratio="12" rot="R90" align="center">&gt;NAME</text>
-<rectangle x1="6.096" y1="-0.254" x2="6.604" y2="0.254" layer="51"/>
-<rectangle x1="-0.254" y1="-0.254" x2="0.254" y2="0.254" layer="51"/>
-<rectangle x1="2.286" y1="-0.254" x2="2.794" y2="0.254" layer="51"/>
-<rectangle x1="4.826" y1="-0.254" x2="5.334" y2="0.254" layer="51"/>
-<rectangle x1="1.016" y1="-0.254" x2="1.524" y2="0.254" layer="51"/>
-<rectangle x1="3.556" y1="-0.254" x2="4.064" y2="0.254" layer="51"/>
+<package name="1X6_1.27_ROUND_CENTERED">
+<pad name="6" x="3.175" y="0" drill="0.508" diameter="0.8128"/>
+<pad name="1" x="-3.175" y="0" drill="0.508" diameter="0.8128"/>
+<pad name="5" x="1.905" y="0" drill="0.508" diameter="0.8128"/>
+<pad name="2" x="-1.905" y="0" drill="0.508" diameter="0.8128"/>
+<pad name="4" x="0.635" y="0" drill="0.508" diameter="0.8128"/>
+<pad name="3" x="-0.635" y="0" drill="0.508" diameter="0.8128" rot="R90"/>
+<text x="-4.445" y="0" size="0.8128" layer="25" font="vector" ratio="12" rot="R90" align="center">&gt;NAME</text>
+<rectangle x1="2.921" y1="-0.254" x2="3.429" y2="0.254" layer="51"/>
+<rectangle x1="-3.429" y1="-0.254" x2="-2.921" y2="0.254" layer="51"/>
+<rectangle x1="-0.889" y1="-0.254" x2="-0.381" y2="0.254" layer="51"/>
+<rectangle x1="1.651" y1="-0.254" x2="2.159" y2="0.254" layer="51"/>
+<rectangle x1="-2.159" y1="-0.254" x2="-1.651" y2="0.254" layer="51"/>
+<rectangle x1="0.381" y1="-0.254" x2="0.889" y2="0.254" layer="51"/>
 </package>
 </packages>
 <symbols>
@@ -1059,12 +1059,12 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </symbol>
 </symbols>
 <devicesets>
-<deviceset name="1X6CONN-1.27-ROUND">
+<deviceset name="1X6CONN-1.27-ROUND_CENTERED">
 <gates>
 <gate name="G$1" symbol="1X6CONN" x="2.54" y="5.08"/>
 </gates>
 <devices>
-<device name="" package="1X6_1.27_ROUND">
+<device name="" package="1X6_1.27_ROUND_CENTERED">
 <connects>
 <connect gate="G$1" pin="1" pad="1"/>
 <connect gate="G$1" pin="2" pad="2"/>
@@ -1166,10 +1166,10 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="GND8" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="R5" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="1k"/>
 <part name="R4" library="Passives" deviceset="RES_0402_CERAMIC" device="" value="4.7k"/>
-<part name="CON1" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
-<part name="CON2" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
-<part name="CON3" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
-<part name="CON4" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND" device=""/>
+<part name="CON1" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND_CENTERED" device=""/>
+<part name="CON2" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND_CENTERED" device=""/>
+<part name="CON3" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND_CENTERED" device=""/>
+<part name="CON4" library="AVR_ISP_127" deviceset="1X6CONN-1.27-ROUND_CENTERED" device=""/>
 <part name="VCC" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="GND11" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="VCC5" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
