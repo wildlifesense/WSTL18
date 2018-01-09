@@ -24,6 +24,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "twi.h"
+#include "spi.h"
 #include "memory.h"
 #include "max30205.h"
 #include "uart.h"
@@ -60,34 +61,47 @@ void _wstl18ClearFlag(uint8_t flag_to_clear) {
 
 
 void wstl18Init(void) {
-	
+	// Disable brown-out detector in sleep mode.
+	MCUCR |= (1<<BODSE)|(1<<BODS);
+	MCUCR |= (1<<BODS);
+	MCUCR &= ~(1<<BODSE);	
+	// Disable ADC
+	ADCSRA &= ~(1<<ADEN);					// Disable ADC, stops the ADC clock.
 	// TODO: Disable watchdog timer (Fuse FUSE_WDTON, defaults to ...) Also WDTCSR
-	// TODO: Disable brown out detector (by programming the BODLEVEL [2:0] Fuses, DS p.70)
 	// TODO: Disconnect the bandgap reference from the Analog Comparator (clear the ACBG bit in	ACSR (ACSR.ACBG)).
-	// TODO: Disable the ADC.
-	
-	PRR0 = 0xFF;				// Disable all modules to save power. These stay here.
-	PRR1 = 0xFF;				// Needed modules must be enabled by their init functions.
+
+	PRR0 |= (1<<PRTWI0)|(1<<PRTIM2)|(1<<PRTIM0)|(1<<PRUSART1)|(1<<PRTIM1)|(1<<PRSPI0)|(1<<PRUSART0)|(1<<PRADC);
+	PRR1 |= (1<<PRTWI1)|(1<<PRPTC)|(1<<PRTIM4)|(1<<PRSPI1)|(1<<PRTIM3);	
+
+	// SM[2:0] = b'010' for power_down and b'011' for power_save
+	SMCR &= ~((1<<SM2)|(1<<SM0));
+	SMCR |= (1<<SM1);
 
 	// Set all ports to input and high before initializing modules that may override these as necessary.
 	// Turn all unused pins into inputs with pull-ups.
 	DDRB  = 0x00;
 	PORTB = 0xFF;
-	DDRC  = ~((1<<DDRC0)|(1<<DDRC1)|(1<<DDRC2)|(1<<DDRC3)|(1<<DDRC4)|(1<<DDRC5)|(1<<DDRC6));		// Port C is 7 bits (0-6).
-	PORTC = ((1<<PORTC0)|(1<<PORTC1)|(1<<PORTC2)|(1<<PORTC3)|(1<<PORTC4)|(1<<PORTC5)|(1<<PORTC6));
+	DDRC  &= ~((1<<DDRC0)|(1<<DDRC1)|(1<<DDRC2)|(1<<DDRC3)|(1<<DDRC4)|(1<<DDRC5)|(1<<DDRC6));		// Port C is 7 bits (0-6).
+	PORTC |= ((1<<PORTC0)|(1<<PORTC1)|(1<<PORTC2)|(1<<PORTC3)|(1<<PORTC4)|(1<<PORTC5)|(1<<PORTC6));
 	DDRD  = 0x00;
 	PORTD = 0xFF;
-	DDRE  = ~((1<<DDRE0)|(1<<DDRE1)|(1<<DDRE2)|(1<<DDRE3));
-	PORTE = ((1<<PORTE0)|(1<<PORTE1)|(1<<PORTE2)|(1<<PORTE3));		// Port E is half a byte.
+	DDRE  &= ~((1<<DDRE0)|(1<<DDRE1)|(1<<DDRE3));
+	PORTE |= ((1<<PORTE0)|(1<<PORTE1)|(1<<PORTE3));
+	DDRE |= (1<<DDRE2);
+	PORTE &= ~(1<<PORTE2);					// Stays here
 //Digital input buffers can be disabled by writing to the Digital Input Disable Registers (DIDR0 for ADC, DIDR1 for AC). (found at http://microchipdeveloper.com/8avr:avrsleep)
 //If the On-chip debug system is enabled by the DWEN Fuse and the chip enters sleep mode, the main clock source is enabled and hence always consumes power. In the deeper sleep modes, this will contribute significantly to the total current consumption.
 
-	ledInit();
-	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
+	//ledInit();
+	//rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
 	//uartEnable();					// Start the uart module. Should this be here?
-	//twiInit();
-	max30205Enable();				// Set up the MAX30205 temperature logger.
+	max30205Enable();
+	spiInit();
+	_delay_ms(10);
 	memoryInitialize();				// Set up AT25DN512C and put to sleep.
+	_delay_ms(10);
+	memoryUltraDeepPowerDownEnter();	
+	spiStop();
 }
 
 void wstl18Sleep(void) {

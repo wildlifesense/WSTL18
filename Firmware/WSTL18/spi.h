@@ -24,7 +24,7 @@
 #ifndef SPI_H_
 #define SPI_H_
 
-void    spiInit(uint8_t mode);
+void    spiInit(void);
 void	spiStop(void);						// Stop SPI and set for low power consumption.
 void    spiExchangeArray(uint8_t * dataout, uint8_t * datain, uint8_t len);
 void	spiTransmitArray(uint8_t * dataout, uint8_t len);

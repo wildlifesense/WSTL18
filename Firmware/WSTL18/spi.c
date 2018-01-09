@@ -124,12 +124,13 @@ void spiPowerDown(void) {
 
 
 // Initialize pins for spi communication
-void spiInit(uint8_t mode) {
+void spiInit(void) {
 	spiPowerUp();								// Make sure SPI0 clock isn't stopped for power-save.
 	spiInterruptDisable();						// SPI0 Interrupt. Turn this into a function.
 	spiSetPrescaler(SPI_PRESCALER_64);			// Prescaler at 64 for testing phase.
 	spiSetSingleSpeed();						// Same as doing nothing
 	spiSetMode(SPI_MODE_0);					// 
+	spiSetMaster();
 	spiEnable();								//
 }
 

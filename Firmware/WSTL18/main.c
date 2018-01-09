@@ -26,23 +26,30 @@
 #include <avr/sleep.h>
 #include "uart.h"
 #include "wstl18.h"
-
+#include "led.h"		// Remove
+#include "rtc.h"		// Remove
 
 
 int main(void) {
 	wstl18Init();
-	set_sleep_mode(SLEEP_MODE_PWR_SAVE);	// Define preferred sleep mode
-	sleep_enable();							// Stays here
+
+	
+
+
+	
+
 
     while (1) {
 		sleep_mode();
 		wstl18DoubleBlink();
 		// Check status of PC3
+		/*
 		if (!(PINC & (1<<PINC3))) {
 			uartEnable();
 			_delay_ms(100);		// uart wouldn't work without this delay.
 			uartSendByte('0');
 			uartDisable();
 		}
+		*/
     }
 }

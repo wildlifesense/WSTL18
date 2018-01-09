@@ -22,6 +22,7 @@
 
   ********************************************************************************/
 #include <avr/io.h>
+#include <util/delay.h>
 #include "twi.h"
 #include "max30205.h"
 
@@ -41,6 +42,7 @@ void max30205Enable(void) {
 	DDRD &= ~(1<<DDRD2); PORTD |= (1<<PORTD2);		// Set D2 as input and pull-up.
 	// No config setup; default is good.
 	twiEnable();
+	_delay_ms(10);
 	max30205_configuration_register = 0;
 	max30205Disable();
 	twiDisable();
