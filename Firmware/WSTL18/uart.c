@@ -58,32 +58,22 @@ void uartEnable(void) {
 	PRR0 &= ~(1<<PRUSART0);
 	UBRR0 =  103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
 	UCSR0A |= (1<<U2X0);
-	UCSR0B |= (1 << RXEN0)|(1 << TXEN0);//|(1<<RXCIE0);		// Enable USART transmitter/receiver.
+	UCSR0B |= (1 << RXEN0)|(1 << TXEN0);					// Enable USART transmitter/receiver.
 	UCSR0C = (1 << UCSZ01)|(1 << UCSZ00);					// 8 data bits, 2 stop bits
-	//UCSR0D |= (1<<SFDE);									// Enable wakeup on RX interrupt (DS p.259)
-	//sei();												// Not using interrupts in WSTL18
 }
 
-/*
- * Enable RX complete interrupt (UART RX must be enabled first).
- */
-void uartEnableRxInterrupt(void) {
-	UCSR0B |= (1<<RXCIE0);
-}
 
-/*
- * Disable RX complete interrupt (UART RX must be enabled).
- */
-void uartDisableRxInterrupt(void) {
-	UCSR0B &= ~(1<<RXCIE0);
-}
+// Enable RX complete interrupt (UART RX must be enabled first).
+//	UCSR0B |= (1<<RXCIE0);
+// Disable RX complete interrupt (UART RX must be enabled).
+//	UCSR0B &= ~(1<<RXCIE0);
 
 /*
  * uartDisable: Stop the UART module so it's at low-power mode.
  */
 void uartDisable(void) {
-	PRR0 |= (1<<PRUSART0);
 	UCSR0B &= ~((1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0));			// Disable UART transmitter, receiver, and RX complete interrupt.
+	PRR0 |= (1<<PRUSART0);
 	DDRD &= ~((1<<DDRD0)|(1<<DDRD1));						// Set pins PD0 and PD1 to input with pull-up.
 	PORTD |= ((1<<PORTD0)|(1<<PORTD1));						// RX0 is PD0, TX0 is PD1
 }
