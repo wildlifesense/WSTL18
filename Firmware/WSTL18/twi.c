@@ -78,9 +78,11 @@ uint8_t twiSendStartConditionCheck(void) {
 // #################### PUBLIC LOW LEVEL FUNCTIONS ####################
 
 // Set line speed and activate TWI0
+// Set TWBR
+// Set TWCR.TWEN
 void twiEnable(void) {
 	PRR0  &= ~(1<<PRTWI0);					// Start clock to TWI peripheral.
-	twiSetPrescaler(TWI_PRESCALER_1);
+//	TWSR0 &= ~((1<<TWPS1)|(1<<TWPS0));		// Prescaler, not needed if it's 0b00.
 	TWBR0 = 2;								// 32 for 100k, 2 for 400k (with prescaler at 1).
 	TWCR0 |= (1<<TWEN);						// Enable TWI
 }

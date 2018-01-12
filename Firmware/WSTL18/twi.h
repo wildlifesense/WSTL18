@@ -37,7 +37,7 @@
 
 uint8_t twiSendStartConditionCheck(void);
 // sets pullups and initializes bus speed to 400kHz (at FCPU=8MHz)
-void twiEnable(void);									// Requires F_CPU to be set. 's' for slow (100kHz), 'm' for medium (400kHz).
+void twiEnable(void);									// Enable TWI module.
 void twiDisable(void);								// Disables the TWI module and stops its clock.
 uint8_t twiStart(uint8_t address);						// Sends a start condition (sets TWSTA)
 void twiStartWait(uint8_t address);					// Sends a start condition and waits for ACK
