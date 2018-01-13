@@ -69,6 +69,7 @@ void wstl18Init(void) {
 	ADCSRA &= ~(1<<ADEN);					// Disable ADC, stops the ADC clock.
 	// TODO: Disable watchdog timer (Fuse FUSE_WDTON, defaults to ...) Also WDTCSR
 	// TODO: Disconnect the bandgap reference from the Analog Comparator (clear the ACBG bit in	ACSR (ACSR.ACBG)).
+	ACSR |= (1<<ACD);						// Disable analog comparator (set to disable).
 
 	PRR0 |= (1<<PRTWI0)|(1<<PRTIM2)|(1<<PRTIM0)|(1<<PRUSART1)|(1<<PRTIM1)|(1<<PRSPI0)|(1<<PRUSART0)|(1<<PRADC);
 	PRR1 |= (1<<PRTWI1)|(1<<PRPTC)|(1<<PRTIM4)|(1<<PRSPI1)|(1<<PRTIM3);	
@@ -89,19 +90,11 @@ void wstl18Init(void) {
 	PORTE |= ((1<<PORTE0)|(1<<PORTE1)|(1<<PORTE3));
 	DDRE |= (1<<DDRE2);
 	PORTE &= ~(1<<PORTE2);					// Stays here
-//Digital input buffers can be disabled by writing to the Digital Input Disable Registers (DIDR0 for ADC, DIDR1 for AC). (found at http://microchipdeveloper.com/8avr:avrsleep)
-//If the On-chip debug system is enabled by the DWEN Fuse and the chip enters sleep mode, the main clock source is enabled and hence always consumes power. In the deeper sleep modes, this will contribute significantly to the total current consumption.
+	//Digital input buffers can be disabled by writing to the Digital Input Disable Registers (DIDR0 for ADC, DIDR1 for AC). (found at http://microchipdeveloper.com/8avr:avrsleep)
+	//If the On-chip debug system is enabled by the DWEN Fuse and the chip enters sleep mode, the main clock source is enabled and hence always consumes power. In the deeper sleep modes, this will contribute significantly to the total current consumption.
 
-	//ledInit();
-	//rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
-	//uartEnable();					// Start the uart module. Should this be here?
-	max30205Enable();
-	spiInit();
-	_delay_ms(10);
-	memoryInitialize();				// Set up AT25DN512C and put to sleep.
-	_delay_ms(10);
-	memoryUltraDeepPowerDownEnter();	
-	spiStop();
+	ledInit();
+	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
 }
 
 void wstl18Sleep(void) {
