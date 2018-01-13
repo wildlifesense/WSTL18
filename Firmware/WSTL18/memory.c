@@ -50,8 +50,11 @@
 
 ********************************************************************************/
 #include <avr/io.h>
+#include <util/delay.h>
 #include "spi.h"
 #include "memory.h"
+#include "uart.h"		// Debugging use only
+#include "wstl18.h"
 
 
 // Flash parameters
@@ -154,7 +157,8 @@ uint8_t memory_flags;						// Memory-related flags set by this module. See MEMOR
  */
 void _memorySingleCommand(uint8_t command) {
 	MEMORY_CS_SELECT;
-	spiTradeByte(command);
+	_delay_us(20);
+	spiSendByte(command);
 	MEMORY_CS_DESELECT;
 }
 /*
@@ -164,9 +168,9 @@ void _memorySingleCommand(uint8_t command) {
 void _memorySendAddress(uint16_t address) {
 	uint8_t address_page = (uint8_t)(address>>8);
 	uint8_t address_byte = (uint8_t) address;
-	spiTradeByte(0x00);								// Send most significant byte first.
-	spiTradeByte(address_page);						// Then send middle significant byte.
-	spiTradeByte(address_byte);						// Then send least significant byte.
+	spiSendByte(0x00);								// Send most significant byte first.
+	spiSendByte(address_page);						// Then send middle significant byte.
+	spiSendByte(address_byte);						// Then send least significant byte.
 }
 
 
@@ -230,6 +234,7 @@ void memoryInitialize(void) {
  * memoryTerminate may not be a very good name for this function.
  */
 void memoryTerminate(void) {
+	MEMORY_CS_RELEASE;
 	; // Nothing to do here, yet.
 }
 
@@ -386,3 +391,28 @@ uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 	return 1;
 }
 
+
+void memoryReadMFDID(void) {
+	uint8_t bytebuffer[4];
+	memoryInitialize();
+
+	spiEnable();
+	_delay_us(50);
+	MEMORY_CS_SELECT;
+	spiSendByte(MEMORY_READ_MANUFACTURER_AND_DEVICE_ID);
+	spiReceiveArray(bytebuffer, sizeof(bytebuffer)/sizeof(bytebuffer[0]));
+	MEMORY_CS_DESELECT;
+	spiDisable();
+
+	uartEnable();
+	_delay_ms(100);		// uart wouldn't work without this delay.
+	for ( int i = 0; i<4; i++) {
+		uartSendByte(bytebuffer[i]);
+		if (bytebuffer[i] == 0x00) {
+			uartSendByte('\n');
+}
+	}
+	_delay_ms(10);	// Helps clear buffer
+	uartDisable();
+
+}

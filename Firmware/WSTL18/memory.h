@@ -29,10 +29,12 @@
 #define MEMORY_CS_INIT			DDRB |= (1<<DDRB2)				// Set CS pin as output
 #define MEMORY_CS_SELECT		PORTB &= ~(1 << PORTB2)			// Set CS pin LOW
 #define MEMORY_CS_DESELECT		PORTB |= (1 << PORTB2)			// Set CS pin HIGH
+#define MEMORY_CS_RELEASE		DDRB &= ~(1<<DDRB2);PORTB |= (1<<PORTB2);
 
 
 void memoryInitialize(void);
 void memoryTerminate(void);
+
 uint8_t memoryScan(uint8_t starting_page);
 void memoryReadStatusRegisters(void);								// Read status registers
 void memoryWriteStatusRegister1(uint8_t status);					// Write status register 1
@@ -43,4 +45,5 @@ void memoryUltraDeepPowerDownEnter();								// Enter ultra-deep power down mode
 void memoryUltraDeepPowerDownExit();								// Exit ultra-deep power down mode.
 uint8_t memoryLogTemperature(uint16_t temperature_reading);			// Stores 16-bit temperature in memory, returns flags.
 
+void memoryReadMFDID(void);
 #endif /* MEMORY_H_ */
