@@ -39,9 +39,12 @@ uint8_t twiSendStartConditionCheck(void);
 // sets pullups and initializes bus speed to 400kHz (at FCPU=8MHz)
 void twiEnable(void);									// Enable TWI module.
 void twiDisable(void);								// Disables the TWI module and stops its clock.
+
+// Control
 uint8_t twiStart(uint8_t address);						// Sends a start condition (sets TWSTA)
 void twiStartWait(uint8_t address);					// Sends a start condition and waits for ACK
 void twiStop(void);									// Sends a stop  condition (sets TWSTO)
+
 void twiSend(uint8_t data);							// Loads data, sends it out, waiting for completion
 void twiStream(uint8_t address, uint8_t *data);		// Send a null-terminated string to a TWI device. Expects a '\0' terminated string
 

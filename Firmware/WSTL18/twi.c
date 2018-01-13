@@ -30,10 +30,7 @@
 
 // #################### INTERNAL USE FUNCTIONS ####################
 
-static void twiSetPrescaler(uint8_t prescaler) {
-	TWSR0 &= ~(TWI_PRESCALER_MASK);		// Clear prescaler bits
-	TWSR0 |= (prescaler);				// Set prescaler
-}
+
 
 // Wait for TWI module to complete current action.
 static void twiWaitForComplete(void) {
@@ -82,9 +79,9 @@ uint8_t twiSendStartConditionCheck(void) {
 // Set TWCR.TWEN
 void twiEnable(void) {
 	PRR0  &= ~(1<<PRTWI0);					// Start clock to TWI peripheral.
-//	TWSR0 &= ~((1<<TWPS1)|(1<<TWPS0));		// Prescaler, not needed if it's 0b00.
-	TWBR0 = 2;								// 32 for 100k, 2 for 400k (with prescaler at 1).
 	TWCR0 |= (1<<TWEN);						// Enable TWI
+	TWBR0 = 2;								// 32 for 100k, 2 for 400k (with prescaler at 1).
+//	TWSR0 &= ~((1<<TWPS1)|(1<<TWPS0));		// Prescaler, not needed if it's 0b00.
 }
 
 // Deactivate the TWI0 module and set SDA and SCL pins to low power consumption.
@@ -207,7 +204,7 @@ void twiStream(uint8_t address, uint8_t *data) { // Expects a '\0' terminated st
  */
 uint8_t twiReadRegister8(uint8_t slave_address, uint8_t register_address) {
 	uint8_t register_data;
-	twiStart(TWI_WRITE(slave_address));
+	twiStart(TWI_WRITE(slave_address));         // TODO: Maybe setting this to twiStartWait?
 	twiSend(register_address);
 	twiStart(TWI_READ(slave_address));
 	register_data = twiReadNoAck();
