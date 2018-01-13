@@ -1084,10 +1084,10 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <library name="Connectors">
 <packages>
 <package name="4_PIN_0.1INCH_POGO_PADS_ANGLE">
-<smd name="1" x="-2.54" y="2.54" dx="1.27" dy="1.27" layer="1" roundness="100"/>
-<smd name="2" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100"/>
-<smd name="3" x="-2.54" y="0" dx="1.27" dy="1.27" layer="1" roundness="100"/>
-<smd name="4" x="-5.08" y="0" dx="1.27" dy="1.27" layer="1" roundness="100"/>
+<smd name="1" x="-2.54" y="2.54" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<smd name="2" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<smd name="3" x="-2.54" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<smd name="4" x="-5.08" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
 <text x="0" y="1.27" size="0.8128" layer="25" font="vector" ratio="12" align="center">&gt;NAME</text>
 </package>
 </packages>
