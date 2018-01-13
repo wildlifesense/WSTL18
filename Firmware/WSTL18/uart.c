@@ -56,7 +56,7 @@ void _uartSetBaud250k(void) {
 
 void uartEnable(void) {
 	PRR0 &= ~(1<<PRUSART0);
-	UBRR0 =  103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
+	UBRR0 = 103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
 	UCSR0A |= (1<<U2X0);
 	UCSR0B |= (1 << RXEN0)|(1 << TXEN0);					// Enable USART transmitter/receiver.
 	UCSR0C = (1 << UCSZ01)|(1 << UCSZ00);					// 8 data bits, 2 stop bits
@@ -108,8 +108,8 @@ void uartPrintWord(uint16_t word) {
 void uartPrintBinaryByte(uint8_t byte) {
 	/* Prints out a byte as a series of 1's and 0's */
 	uint8_t bit;
-	for (bit = 7; bit < 255; bit--) {
-		if (bit_is_set(byte, bit))
+	for (bit = 8; bit > 0; bit--) {
+		if (bit_is_set(byte, bit-1))
 		uartSendByte('1');
 		else
 		uartSendByte('0');
