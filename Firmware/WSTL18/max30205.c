@@ -86,6 +86,9 @@ void max30205LoadConfiguration(void) {
 	max30205_configuration_register = max30205ReadConfiguration();
 }
 
+uint8_t max30205ReadHyst(void) {
+	return twiReadRegister8(MAX30205_ADDRESS, MAX30205_REG_HYST);
+}
 /*
 	max30205StartOneShot: Trigger a one-shot on the temperature sensor while it's in shutdown mode.
 	This function only triggers the temperature conversion. Because it takes a considerable time

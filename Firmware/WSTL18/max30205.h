@@ -56,6 +56,7 @@ void		max30205Resume(void);
 void		max30205SaveConfiguration(void);
 uint8_t		max30205ReadConfiguration(void);
 void		max30205LoadConfiguration(void);
+uint8_t max30205ReadHyst(void);
 void		max30205StartOneShot(void);
 uint16_t	max30205ReadTemperature(void);
 
