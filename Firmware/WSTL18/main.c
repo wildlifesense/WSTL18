@@ -21,6 +21,10 @@
   see <http://www.gnu.org/licenses/>.
 
   ********************************************************************************/
+#include <stdio.h>
+#include <inttypes.h>
+#include <math.h>
+#include <stdlib.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/sleep.h>
@@ -28,28 +32,41 @@
 #include "wstl18.h"
 #include "led.h"		// Remove
 #include "rtc.h"		// Remove
+#include "memory.h"
+#include "spi.h"
+#include "twi.h"
+#include "max30205.h"
 
 
 int main(void) {
 	wstl18Init();
-
 	
+	uint16_t max30205_temp = 32;			// 16-bit temperature from sensor.
+	double lsb_celcius = 0.00390625;		// How many celcius is one lsb from sensor?
+	char max30205_tempstr[6];				// Char array for temperature in celcius.
 
-
-	
-
-
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
     while (1) {
 		sleep_mode();
 		wstl18DoubleBlink();
-		// Check status of PC3
-		/*
-		if (!(PINC & (1<<PINC3))) {
-			uartEnable();
-			_delay_ms(100);		// uart wouldn't work without this delay.
-			uartSendByte('0');
-			uartDisable();
-		}
-		*/
-    }
+		twiEnable();
+		_delay_ms(100);
+		max30205_temp = max30205ReadTemperature();
+		twiDisable();
+
+
+		double whole = (double)max30205_temp * lsb_celcius;
+		whole = round(whole*10) / 10;
+		sprintf(max30205_tempstr, "%.1f", (double)whole);
+
+		uartEnable();
+		_delay_ms(100);
+
+		uartSendByte((uint8_t) (max30205_temp >> 8));
+		uartSendByte((uint8_t) max30205_temp);
+
+		//uartSendString(max30205_tempstr);
+		uartDisable();
+
+   }
 }
