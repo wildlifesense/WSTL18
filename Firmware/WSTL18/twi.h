@@ -26,26 +26,19 @@
 #ifndef TWI_H_
 #define TWI_H_
 
-#define TWI_PRESCALER_MASK	0b00000011
-#define	TWI_PRESCALER_1		0b00000000
-#define TWI_PRESCALER_4		0b00000001
-#define TWI_PRESCALER_16	0b00000010
-#define TWI_PRESCALER_64	0b00000011
+#define TWI_SLA_READ(TWI_ADDR)	TWI_ADDR|1
+#define TWI_SLA_WRITE(TWI_ADDR)	TWI_ADDR|0
 
-#define TWI_READ(TWI_ADDR)	TWI_ADDR|1
-#define TWI_WRITE(TWI_ADDR)	TWI_ADDR|0
-
-uint8_t twiSendStartConditionCheck(void);
 // sets pullups and initializes bus speed to 400kHz (at FCPU=8MHz)
-void twiEnable(void);									// Enable TWI module.
+void twiEnable(void);								// Enable TWI module.
 void twiDisable(void);								// Disables the TWI module and stops its clock.
 
 // Control
-uint8_t twiStart(uint8_t address);						// Sends a start condition (sets TWSTA)
-void twiStartWait(uint8_t address);					// Sends a start condition and waits for ACK
-void twiStop(void);									// Sends a stop  condition (sets TWSTO)
+uint8_t twiStart(uint8_t address);					// Sends a start condition (sets TWSTA)
+void _twiStartWait(uint8_t address);					// Sends a start condition and waits for ACK
+void _twiSetStopCondition(void);									// Sends a stop  condition (sets TWSTO)
 
-void twiSend(uint8_t data);							// Loads data, sends it out, waiting for completion
+void _twiSend(uint8_t data);							// Loads data, sends it out, waiting for completion
 void twiStream(uint8_t address, uint8_t *data);		// Send a null-terminated string to a TWI device. Expects a '\0' terminated string
 
 uint8_t twiReadRegister8(uint8_t slave_address, uint8_t register_address);
@@ -54,8 +47,8 @@ void twiWriteRegister8( uint8_t slave_address, uint8_t register_address, uint8_t
 void twiWriteRegister16( uint8_t slave_address, uint8_t register_address, uint16_t register_value );
 //
 
-uint8_t twiReadAck(void);       // Read in from slave, sending ACK when done (sets TWEA)
-uint8_t twiReadNoAck(void);     // Read in from slave, sending NOACK when done (no TWEA)
+uint8_t _twiReadAck(void);       // Read in from slave, sending ACK when done (sets TWEA)
+uint8_t _twiReadNoAck(void);     // Read in from slave, sending NOACK when done (no TWEA)
 
 
 

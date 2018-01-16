@@ -37,6 +37,7 @@
 #include "twi.h"
 #include "max30205.h"
 
+#include <ctype.h>
 
 int main(void) {
 	wstl18Init();
@@ -44,9 +45,24 @@ int main(void) {
 	uint16_t max30205_temp = 32;			// 16-bit temperature from sensor.
 	double lsb_celcius = 0.00390625;		// How many celcius is one lsb from sensor?
 	char max30205_tempstr[6];				// Char array for temperature in celcius.
-
-	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	
+	char string1[20] = "Character is: ";
+	uartEnable();
+	_delay_ms(100);
+	char a = 'a';
+	//set_sleep_mode(SLEEP_MODE_PWR_SAVE);
     while (1) {
+		for(uint8_t i=0; string1[i]; i++) {
+			uartSendByte(string1[i]);
+		}
+		uartSendByte(a);
+		uartSendByte('\n');
+		_delay_ms(0);
+		a++;
+		if(!isalpha(a)) {
+			a = 'a';
+		}
+/*		
 		sleep_mode();
 		wstl18DoubleBlink();
 		twiEnable();
@@ -67,6 +83,6 @@ int main(void) {
 
 		//uartSendString(max30205_tempstr);
 		uartDisable();
-
+*/
    }
 }
