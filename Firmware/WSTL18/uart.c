@@ -22,10 +22,25 @@
 
   ********************************************************************************/
 #include <avr/io.h>
-#include <avr/interrupt.h>
+//#include <avr/interrupt.h>		// Enable this if the ISR will be used.
 #include "uart.h"
 
+
 /*
+    DS p.267: The initialization process normally consists of:
+        1. Setting the BAUD rate,
+        2. Setting frame format,
+        3. Enabling the transmitter or receiver depending on the usage.
+    The global interrupt flag should be cleared when doing the initialization.
+
+    Before doing a re-initialization with changed BAUD rate, or frame format, be
+    sure there are no ongoing transmissions while the registers are changed.
+    The TXC flag (UCSRn.TXC) can be used to check that the transmitter has completed
+    all transfers. The RXC flag (UCSRn.RXC) can be used to check that there are no unread
+    data in the receive buffer. The UCSRnA.TXC must be cleared before each transmisison
+    (before UDRn is written) if it is used for this purpose.
+
+
  * A byte was received on the RX UART. Remember to enable UCSR0B.RXCIE0
  * This ISR changes per project, so it should be in project-specific source file, not in library.
 
@@ -35,38 +50,14 @@ ISR(USART0_RX_vect) {
 }
  */
 
-void _uartSetBaud9600(void) {
-	UBRR0 =  103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
-	UCSR0A |= (1<<U2X0);	
-}
-void _uartSetBaud1M(void) {
-	// I'm hard-setting baud rate to 1M.
-	// See table in DS p.249 for baud rate examples
-	UBRR0 =  0;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
-	UCSR0A |= (1<<U2X0);
-}
-void _uartSetBaud500k(void) {
-	UBRR0 = 1;
-	UCSR0A |= (1<<U2X0);
-}
-void _uartSetBaud250k(void) {
-	UBRR0 = 3;
-	UCSR0A |= (1<<U2X0);
-}
-
 void uartEnable(void) {
 	PRR0 &= ~(1<<PRUSART0);
-	UBRR0 = 103;												// 103 for 9600BAUD, 0 for 1MBAUD (at 8MHz)
+	UBRR0 = 0;												// (8MHz) 103:9600, 3:250k, 1:500k, 0:1M
 	UCSR0A |= (1<<U2X0);
 	UCSR0B |= (1 << RXEN0)|(1 << TXEN0);					// Enable USART transmitter/receiver.
-	UCSR0C = (1 << UCSZ01)|(1 << UCSZ00);					// 8 data bits, 2 stop bits
+	UCSR0C = (1<<USBS0)|(1 << UCSZ01)|(1 << UCSZ00);		// 8 data bits, 2 stop bits
 }
 
-
-// Enable RX complete interrupt (UART RX must be enabled first).
-//	UCSR0B |= (1<<RXCIE0);
-// Disable RX complete interrupt (UART RX must be enabled).
-//	UCSR0B &= ~(1<<RXCIE0);
 
 /*
  * uartDisable: Stop the UART module so it's at low-power mode.
@@ -105,8 +96,10 @@ void uartPrintWord(uint16_t word) {
 	uartSendByte('0' + (word % 10));                             /* Ones */
 }
 
+/*
+ * Sends a byte to uart as a series of '0' and '1' characters.
+ */
 void uartPrintBinaryByte(uint8_t byte) {
-	/* Prints out a byte as a series of 1's and 0's */
 	uint8_t bit;
 	for (bit = 8; bit > 0; bit--) {
 		if (bit_is_set(byte, bit-1))
@@ -116,7 +109,9 @@ void uartPrintBinaryByte(uint8_t byte) {
 	}
 }
 
-
+/*
+ * Sends a 16-bit word to uart as a series of '0' and '1' characters.
+ */
 void uartPrintBinaryWord(uint16_t word) {
 	// Prints out a word as a series of 1's and 0's
 	uartPrintBinaryByte((uint8_t)(word>>8));
