@@ -22,7 +22,8 @@
 
   ********************************************************************************/
 #include <avr/io.h>
-//#include <avr/interrupt.h>		// Enable this if the ISR will be used.
+#include <avr/interrupt.h>		// Enable this if the ISR will be used.
+#include <util/delay.h>			// Needed for diesable delay.
 #include "uart.h"
 
 
@@ -45,29 +46,51 @@
  * This ISR changes per project, so it should be in project-specific source file, not in library.
 
 ISR(USART0_RX_vect) {
-	//uartIsrHandler(UDR0);
-	//RED_BLINK;				// This prevents TX data from being mangled. Why?
+	// Check UCSR0A.FE0
+	// Check UCSR0A.DOR0
+	// Check UCSR0A.UPE0
 }
  */
 
-void uartEnable(void) {
+void USART_Init(void)
+{
+	/*Set baud rate */
+	cli();
 	PRR0 &= ~(1<<PRUSART0);
-	UBRR0 = 0;												// (8MHz) 103:9600, 3:250k, 1:500k, 0:1M
+
+	UBRR0 = 0;
 	UCSR0A |= (1<<U2X0);
-	UCSR0B |= (1 << RXEN0)|(1 << TXEN0);					// Enable USART transmitter/receiver.
-	UCSR0C = (1<<USBS0)|(1 << UCSZ01)|(1 << UCSZ00);		// 8 data bits, 2 stop bits
+	//Enable receiver and transmitter
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+	/* Set frame format: 8data, 2stop bit */
+	UCSR0C = (1<<USBS0)|(1<<UCSZ00)|(1<<UCSZ01);
+	sei();
 }
 
+
+void uartEnable(void) {
+	PRR0 &= ~(1<<PRUSART0);
+	UCSR0B = (1 << RXEN0)|(1 << TXEN0);						// Enable USART transmitter/receiver.
+	UBRR0 = 0;												// (8MHz) 103:9600, 3:250k, 1:500k, 0:1M
+	UCSR0A |= (1<<U2X0);
+	UCSR0A &= ~(1<<UDRE0);
+	//UCSR0C |= (1<<USBS0)|(1 << UCSZ01)|(1 << UCSZ00);		// 8 data bits, 2 stop bits
+	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+}
 
 /*
  * uartDisable: Stop the UART module so it's at low-power mode.
  */
 void uartDisable(void) {
-	UCSR0B &= ~((1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0));			// Disable UART transmitter, receiver, and RX complete interrupt.
+	_delay_us(25);						// Needed to avoid problems if uart disabled before a sleep.
+	//Debug: See what the status is here.
+	UCSR0B &= ~(1<<RXEN0|1<<TXEN0);			// Disable UART transmitter, receiver, and RX complete interrupt.
 	PRR0 |= (1<<PRUSART0);
 	DDRD &= ~((1<<DDRD0)|(1<<DDRD1));						// Set pins PD0 and PD1 to input with pull-up.
 	PORTD |= ((1<<PORTD0)|(1<<PORTD1));						// RX0 is PD0, TX0 is PD1
 }
+
+
 
 // Send a byte over usart.
 void uartSendByte(uint8_t data) {

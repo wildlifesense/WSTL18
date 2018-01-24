@@ -24,10 +24,9 @@
 #ifndef UART_H_
 #define UART_H_
 
+void USART_Init(void);
 // UART module control
 void uartEnable(void);
-void uartEnableRxInterrupt(void);
-void uartDisableRxInterrupt(void);
 void uartDisable(void);
 
 // UART data exchange
