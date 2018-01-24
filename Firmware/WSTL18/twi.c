@@ -39,9 +39,23 @@ TODO:
 // ############################################################################
 // ############################# DEFINITIONS ##################################
 // ############################################################################
-#define TWI_ERROR_START	0b00000001	// Could not set start condition on line
-#define TWI_ERROR_SLACK	0b00000010	// Did not receive ACK from slave.
-uint8_t twi_error_flags;
+
+
+
+
+#define TWI_ERROR_START	0b00000001	// 0x01	Could not set start condition on line
+#define TWI_ERROR_SLACK	0b00000010	// 0x02	Did not receive ACK from slave.
+#define TWI_ERROR_DATA	0b00000100	// 0x04	Did not receive ACK after sending a data byte.
+#define TWI_ERROR_3		0b00001000	// 0x08
+#define TWI_ERROR_4		0b00010000	// 0x10
+#define TWI_ERROR_5		0b00100000	// 0x20
+#define TWI_ERROR_BUS	0b01000000	// 0x40	Bus error during START or STOP
+#define TWI_ERROR_UNKN	0b10000000	// 0x80	Unknown error
+uint8_t twi_error_flags = 0;
+uint16_t twi_error_count = 0;
+
+
+
 
 // ############################################################################
 // ############################# ERROR FLAGS ##################################
@@ -50,16 +64,26 @@ uint8_t twi_error_flags;
 /*
  * twiErrorFlag: Set supplied error flag from defined flags at top of module.
  */
-void twiErrorFlag(uint8_t flag) {
+void _twiErrorFlag(uint8_t flag) {
 	twi_error_flags |= flag;
+	twi_error_count++;
 }
 
-void twiErrorClearFlag(uint8_t flag) {
+void _twiErrorClearFlag(uint8_t flag) {
 	twi_error_flags &= ~flag;
 }
 
-void twiErrorClearAll(void) {
-	twi_error_flags = 0x00;
+void _twiErrorClearAll(void) {
+	twi_error_flags = 0;
+	twi_error_count = 0;
+}
+
+uint8_t twiErrorGetFlags(void) {
+	return twi_error_flags;
+}
+
+uint16_t twiErrorGetCount(void) {
+	return twi_error_count;
 }
 // ############################################################################
 // ####################### INTERNAL USE FUNCTIONS #############################
@@ -124,7 +148,7 @@ static void _twiSetStartCondition(void) {
  */
 void _twiSetStopCondition(void) {
 	TWCR0 = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	_twiWaitForTWINT();
+	//_twiWaitForTWINT();
 	// Wait until stop condition is executed and bus released.
 
 }
@@ -179,13 +203,26 @@ void _twiStartWait(uint8_t address) {
     while(1) {
         // Send start condition
 		_twiSetStartCondition();		// Set start on TWI bus and check result.
-		if( !_twiStatusIs(TW_START) && !_twiStatusIs(TW_REP_START) ) {
+		if ( _twiStatusIs(TW_START)||_twiStatusIs(TW_REP_START)) {
+			;	// Do nothing, for now. All is good.
+		}/* else {
+			_twiErrorFlag(TWI_ERROR_START);
+			if (_twiStatusIs(TW_BUS_ERROR)) {
+				_twiErrorFlag(TWI_ERROR_BUS);
+			}
 			continue;
-		}
+		}*/
 		// TWSTA must be cleared by	software when the START condition has been transmitted.
 		_twiSend(address);			// Send device address. Expected to contain R/W bit.
-		if( _twiStatusIs(TW_MT_SLA_NACK) || _twiStatusIs(TW_MR_DATA_NACK) ) {
+		if( _twiStatusIs(TW_MT_SLA_ACK)||_twiStatusIs(TW_MR_SLA_ACK) ) {
+			; // For now, do nothing. All is ok with transmission.
+		} else {
 			_twiSetStopCondition();							// Device busy, stop operation.
+			if (_twiStatusIs(TW_MT_SLA_NACK)) {
+				_twiErrorFlag(TWI_ERROR_SLACK);
+			} else if (_twiStatusIs(TW_BUS_ERROR)) {
+				_twiErrorFlag(TWI_ERROR_BUS);
+			}
 			continue;
 		}
         // if( twst != TW_MT_SLA_ACK) return 1 // TODO: Actually do this!
@@ -202,12 +239,16 @@ uint8_t _twiStart(uint8_t address) {
     // Send start condition
 	_twiSetStartCondition();
     if(!(_twiStatusIs(TW_START) || _twiStatusIs(TW_REP_START)) ) {
-		return 1;
+		_twiErrorFlag(TWI_ERROR_START);
+		if (_twiStatusIs(TW_BUS_ERROR)) {
+			_twiErrorFlag(TWI_ERROR_BUS);
+		}		return twiErrorGetFlags();
 	}
     
     _twiSend(address);						// Send SLA+W or SLA+R
 	if(!(_twiStatusIs(TW_MT_SLA_ACK) || _twiStatusIs(TW_MR_SLA_ACK)) ) {
-		return 1;
+		_twiErrorFlag(TWI_ERROR_SLACK);
+		return twiErrorGetFlags();
 	}
     return 0;
 }
@@ -237,9 +278,11 @@ uint8_t _twiStart(uint8_t address) {
  */
 void twiEnable(void) {
 	PRR0  &= ~(1<<PRTWI0);					// Start clock to TWI peripheral.
+	//TWSR0 &= ~((1<<TWPS1)|(1<<TWPS0));		// Prescaler, not needed if it's 0b00.
+	TWSR0 &= ~(0b11);						// Clear prescaler bits
+	TWSR0 |= (0<<TWPS1|0<<TWPS0);			// Set prescaler bits: 00 for 1, 01 for 4, 10 for 16, 11 for 64.
+	TWBR0 = 32;								// 32 for 100k, 2 for 400k (with 8MHz, prescaler at 1).
 	TWCR0 |= (1<<TWEN);						// Enable TWI
-	TWBR0 = 2;								// 32 for 100k, 2 for 400k (with prescaler at 1).
-//	TWSR0 &= ~((1<<TWPS1)|(1<<TWPS0));		// Prescaler, not needed if it's 0b00.
 }
 
 // Deactivate the TWI0 module and set SDA and SCL pins to low power consumption.
@@ -267,9 +310,53 @@ uint8_t twiReadRegister8(uint8_t slave_address, uint8_t register_address) {
 	_twiStartWait(TWI_SLA_WRITE(slave_address));
 	_twiSend(register_address);
 	_twiStart(TWI_SLA_READ(slave_address));
-	register_data = _twiReadNoAck();
+	register_data = _twiReadNoAck();		// Here is a problem TODO:
 	_twiSetStopCondition();
 	return register_data;
+}
+
+uint8_t twiDRead8(uint8_t slave_address, uint8_t register_address) {
+	uint8_t hyst_data;
+
+	// Set start condition on TWI bus
+	_twiSetStartCondition();
+	if( !_twiStatusIs(TW_START)) {
+		return 0xFF;
+	}
+	
+	// Send slave address with write bit
+	_twiSend(TWI_SLA_WRITE(slave_address));
+	if ( !_twiStatusIs(TW_MT_SLA_ACK) ) {
+		return 0xFE;
+	}
+	
+	// Send slave register address we want to read from (considered data).
+	_twiSend(register_address);
+	if ( !_twiStatusIs(TW_MT_DATA_ACK) ) {
+		return 0xFD;
+	}
+	
+	// Set start condition again, here considered a re-start.
+	_twiSetStartCondition();
+	if((TWSR0 & 0xF8) != TW_REP_START) {
+		return 0xFC;
+	}
+
+	// Send slave address with read bit.	
+	_twiSend(TWI_SLA_READ(slave_address));
+	if ( !_twiStatusIs(TW_MR_SLA_ACK) ) {
+		return TWSR0&0xF8;
+	}
+	
+	hyst_data = _twiReadNoAck();
+	if ( !_twiStatusIs(TW_MR_DATA_NACK) ) {
+		return 0xFA;
+	}
+	
+	// Set stop condition
+	//TWCR0 = 1<<TWINT|1<<TWSTO|1<<TWEN;
+	_twiSetStopCondition();
+	return hyst_data;
 }
 /*
  *	twiReadRegister16: Reads data from a 16-bit register of slave device.
