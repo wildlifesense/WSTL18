@@ -28,7 +28,6 @@ void    spiEnable(void);
 void	spiDisable(void);						// Stop SPI and set for low power consumption.
 
 uint8_t	spiTradeByte(uint8_t byte);
-void	spiSendByte(uint8_t byte);
 
 void    spiExchangeArray(uint8_t * dataout, uint8_t * datain, uint8_t len);
 void	spiTransmitArray(uint8_t * dataout, uint8_t len);

@@ -65,8 +65,10 @@ void wstl18Init(void) {
 	MCUCR |= (1<<BODSE)|(1<<BODS);
 	MCUCR |= (1<<BODS);
 	MCUCR &= ~(1<<BODSE);	
+
 	// Disable ADC
 	ADCSRA &= ~(1<<ADEN);					// Disable ADC, stops the ADC clock.
+
 	// TODO: Disable watchdog timer (Fuse FUSE_WDTON, defaults to ...) Also WDTCSR
 	// TODO: Disconnect the bandgap reference from the Analog Comparator (clear the ACBG bit in	ACSR (ACSR.ACBG)).
 	ACSR |= (1<<ACD);						// Disable analog comparator (set to disable).
@@ -75,8 +77,8 @@ void wstl18Init(void) {
 	PRR1 |= (1<<PRTWI1)|(1<<PRPTC)|(1<<PRTIM4)|(1<<PRSPI1)|(1<<PRTIM3);	
 
 	// SM[2:0] = b'010' for power_down and b'011' for power_save
-	SMCR &= ~((1<<SM2)|(1<<SM0));
-	SMCR |= (1<<SM1);
+	//SMCR &= ~((1<<SM2)|(1<<SM0));
+	//SMCR |= (1<<SM1);
 
 	// Set all ports to input and high before initializing modules that may override these as necessary.
 	// Turn all unused pins into inputs with pull-ups.
@@ -95,21 +97,8 @@ void wstl18Init(void) {
 
 	ledInit();
 	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
+	_delay_ms(1000);
 }
-
-void wstl18Sleep(void) {
-	// Make sure memory is not busy.
-		// Put the memory to sleep
-	// Put the SPI module to sleep
-	max30205Disable();
-	twiDisable();
-
-}
-void wstl18WakeUp(void) {
-	// Wake up TWI
-	// Wake up SPI
-}
-
 
 
 void wstl18CommandClear(void) {
@@ -183,10 +172,8 @@ void wstl18CommandRespond(void) {
 void wstl18UartExchange(void) {
 	wstl18CommandClear();
 	uartEnable();
-	uartEnableRxInterrupt();
 	uartSendByte('X');
 	_delay_ms(WSTL18_HOST_RESPOND_TIMEOUT_MS);				// Host has this much time to respond.
-	uartDisableRxInterrupt();
 	uartDisable();	// Move this to after check?
 	wstl18CommandRespond();
 }
@@ -214,12 +201,8 @@ uint16_t wstl18DoLog(void) {
 	return max30205ReadTemperature();
 }
 
-void wstl18DoubleBlink(void) {
+void wstl18Blink(void) {
 	PORTE |= (1<<PORTE2);
-	_delay_ms(5);
-	PORTE &= ~(1<<PORTE2);
-	_delay_ms(90);
-	PORTE |= (1<<PORTE2);
-	_delay_ms(5);
+	_delay_ms(1);
 	PORTE &= ~(1<<PORTE2);
 }

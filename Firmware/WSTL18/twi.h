@@ -41,8 +41,10 @@ void _twiSetStopCondition(void);									// Sends a stop  condition (sets TWSTO)
 void _twiSend(uint8_t data);							// Loads data, sends it out, waiting for completion
 void twiStream(uint8_t address, uint8_t *data);		// Send a null-terminated string to a TWI device. Expects a '\0' terminated string
 
-uint8_t twiReadRegister8(uint8_t slave_address, uint8_t register_address);
+uint8_t twiReadRegister8_DEPRECATED(uint8_t slave_address, uint8_t register_address);
 uint8_t twiDRead8(uint8_t slave_address, uint8_t register_address);
+uint16_t twiDRead16(uint8_t slave_address, uint8_t register_address);
+void twiDWrite8(uint8_t slave_address, uint8_t register_address, uint8_t write_value);
 uint16_t twiReadRegister16(uint8_t slave_address, uint8_t register_address );
 void twiWriteRegister8( uint8_t slave_address, uint8_t register_address, uint8_t register_value );
 void twiWriteRegister16( uint8_t slave_address, uint8_t register_address, uint16_t register_value );

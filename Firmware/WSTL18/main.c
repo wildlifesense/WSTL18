@@ -21,10 +21,6 @@
   see <http://www.gnu.org/licenses/>.
 
   ********************************************************************************/
-#include <stdio.h>
-#include <inttypes.h>
-#include <math.h>
-#include <stdlib.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/sleep.h>
@@ -34,55 +30,42 @@
 #include "rtc.h"		// Remove
 #include "memory.h"
 #include "spi.h"
-#include "twi.h"
 #include "max30205.h"
-
-#include <ctype.h>
 
 int main(void) {
 	wstl18Init();
+	max30205Init();
+	memoryInitialize();
+
+	spiEnable();
+	memoryOTPLoad();
+	spiDisable();
+	memoryOTPPrint();
 	
-	uint16_t max30205_temp = 32;			// 16-bit temperature from sensor.
-	double lsb_celcius = 0.00390625;		// How many celcius is one lsb from sensor?
-	char max30205_tempstr[6];				// Char array for temperature in celcius.
-	
-	char string1[20] = "Character is: ";
-	uartEnable();
-	_delay_ms(100);
-	char a = 'a';
-	//set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
     while (1) {
-		for(uint8_t i=0; string1[i]; i++) {
-			uartSendByte(string1[i]);
-		}
-		uartSendByte(a);
-		uartSendByte('\n');
-		_delay_ms(0);
-		a++;
-		if(!isalpha(a)) {
-			a = 'a';
-		}
-/*		
 		sleep_mode();
-		wstl18DoubleBlink();
-		twiEnable();
-		_delay_ms(100);
-		max30205_temp = max30205ReadTemperature();
-		twiDisable();
-
-
-		double whole = (double)max30205_temp * lsb_celcius;
-		whole = round(whole*10) / 10;
-		sprintf(max30205_tempstr, "%.1f", (double)whole);
-
+		wstl18Blink();
+/*
+		max30205StartOneShot();
+		_delay_ms(50);
+		temperature = max30205ReadTemperature();
+		temp_MSB = (uint8_t) (temperature>>8);
+		temp_LSB = (uint8_t) temperature;
+*/		
+		// Send data over uart
 		uartEnable();
-		_delay_ms(100);
-
-		uartSendByte((uint8_t) (max30205_temp >> 8));
-		uartSendByte((uint8_t) max30205_temp);
-
-		//uartSendString(max30205_tempstr);
+		uartSendByte('-');
+		uartSendByte(1);
+		uartSendByte(2);
+		uartSendByte('+');
 		uartDisable();
-*/
-   }
+	
+		memoryUltraDeepPowerDownExit();
+		
+		memoryReadMFDID();
+		memoryPrintMFDID();
+
+		memoryUltraDeepPowerDownEnter();
+	   }
 }

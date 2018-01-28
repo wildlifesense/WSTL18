@@ -34,7 +34,7 @@ TODO:
 #include <avr/io.h>
 #include <util/twi.h>								// Useful TWI bit mask definitions
 #include "twi.h"
-
+#include "uart.h"									// For debugging.
 
 // ############################################################################
 // ############################# DEFINITIONS ##################################
@@ -148,9 +148,6 @@ static void _twiSetStartCondition(void) {
  */
 void _twiSetStopCondition(void) {
 	TWCR0 = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	//_twiWaitForTWINT();
-	// Wait until stop condition is executed and bus released.
-
 }
 
 
@@ -253,6 +250,49 @@ uint8_t _twiStart(uint8_t address) {
     return 0;
 }
 
+
+
+void _twiStartRegisterWrite(uint8_t slave_address, uint8_t register_address) {
+	// Set start condition on TWI bus
+	_twiSetStartCondition();
+	if( !_twiStatusIs(TW_START)) {
+		;// Do nothing here
+	}
+	
+	// Send slave address with write bit
+	_twiSend(TWI_SLA_WRITE(slave_address));
+	if ( !_twiStatusIs(TW_MT_SLA_ACK) ) {
+		;	// Do nothing yet
+	}
+	
+	// Send slave register address we want to access (considered data).
+	_twiSend(register_address);
+	if ( !_twiStatusIs(TW_MT_DATA_ACK) ) {
+		;	// Do nothing yet
+	}
+}
+
+/*
+ * Internal function: Start a register-read transaction on TWI
+ */
+void _twiStartRegisterRead(uint8_t slave_address, uint8_t register_address) {
+	_twiStartRegisterWrite(slave_address, register_address);
+	
+	// Set start condition again, here considered a re-start.
+	_twiSetStartCondition();
+	if((TWSR0 & 0xF8) != TW_REP_START) {
+		;	// Do nothing yet.
+	}
+
+	// Send slave address with read bit.
+	_twiSend(TWI_SLA_READ(slave_address));
+	if ( !_twiStatusIs(TW_MR_SLA_ACK) ) {
+		;	// Do nothing yet.
+	}
+	
+}
+
+
 // ############################################################################
 // #################### END OF INTERNAL USE FUNCTIONS #########################
 // ############################################################################
@@ -305,58 +345,51 @@ void twiDisable(void) {
  *	Output:
  *		8-bit value of the register.
  */
-uint8_t twiReadRegister8(uint8_t slave_address, uint8_t register_address) {
-	uint8_t register_data;
-	_twiStartWait(TWI_SLA_WRITE(slave_address));
-	_twiSend(register_address);
-	_twiStart(TWI_SLA_READ(slave_address));
-	register_data = _twiReadNoAck();		// Here is a problem TODO:
-	_twiSetStopCondition();
-	return register_data;
-}
-
 uint8_t twiDRead8(uint8_t slave_address, uint8_t register_address) {
-	uint8_t hyst_data;
+	uint8_t register_data;
+	_twiStartRegisterRead(slave_address, register_address);
 
-	// Set start condition on TWI bus
-	_twiSetStartCondition();
-	if( !_twiStatusIs(TW_START)) {
-		return 0xFF;
-	}
-	
-	// Send slave address with write bit
-	_twiSend(TWI_SLA_WRITE(slave_address));
-	if ( !_twiStatusIs(TW_MT_SLA_ACK) ) {
-		return 0xFE;
-	}
-	
-	// Send slave register address we want to read from (considered data).
-	_twiSend(register_address);
-	if ( !_twiStatusIs(TW_MT_DATA_ACK) ) {
-		return 0xFD;
-	}
-	
-	// Set start condition again, here considered a re-start.
-	_twiSetStartCondition();
-	if((TWSR0 & 0xF8) != TW_REP_START) {
-		return 0xFC;
-	}
-
-	// Send slave address with read bit.	
-	_twiSend(TWI_SLA_READ(slave_address));
-	if ( !_twiStatusIs(TW_MR_SLA_ACK) ) {
-		return TWSR0&0xF8;
-	}
-	
-	hyst_data = _twiReadNoAck();
+	register_data = _twiReadNoAck();
 	if ( !_twiStatusIs(TW_MR_DATA_NACK) ) {
 		return 0xFA;
 	}
 	
 	// Set stop condition
-	//TWCR0 = 1<<TWINT|1<<TWSTO|1<<TWEN;
 	_twiSetStopCondition();
-	return hyst_data;
+	return register_data;
+}
+
+uint16_t twiDRead16(uint8_t slave_address, uint8_t register_address) {
+	uint8_t data_MSB;
+	uint8_t data_LSB;
+	uint16_t data_16b;
+	_twiStartRegisterRead(slave_address, register_address);
+	data_MSB = _twiReadAck();
+	if ( !_twiStatusIs(TW_MR_DATA_ACK)) {
+		return 0xFD;
+	}
+	data_LSB = _twiReadNoAck();
+	if ( !_twiStatusIs(TW_MR_DATA_NACK)) {
+		return 0xFE;
+	}
+	
+	uartSendByte(data_MSB);
+	uartSendByte(data_LSB);
+	
+	_twiSetStopCondition();
+	data_16b = data_MSB;
+	data_16b <<= 8;
+	data_16b |= data_LSB;
+	return data_16b;
+}
+
+void twiDWrite8(uint8_t slave_address, uint8_t register_address, uint8_t write_value) {
+	_twiStartRegisterWrite(slave_address, register_address);
+	_twiSend(write_value);
+	if( !_twiStatusIs(TW_MT_DATA_ACK) ) {
+		;	// Do something
+	}
+	_twiSetStopCondition();
 }
 /*
  *	twiReadRegister16: Reads data from a 16-bit register of slave device.

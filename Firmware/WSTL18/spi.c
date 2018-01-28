@@ -30,29 +30,21 @@
 //	SCK0 is PB5
 //	MOSI0 is PB3
 //	SS0 is PB2
-// What about slave configuration?
-#define SPI0_MISO_MASTER_INIT		DDRB &= ~(1<<DDRB4);								// MISO stays as input
-#define SPI0_SCK_MASTER_INIT											// SCK is output
-#define SPI0_SS_MASTER_INIT	SPI0_SS_DDR |= (1<<SPI0_SS_DDR_BIT);SPI0_SS_PORT |= SPI0_SS_PORT_BIT	// OUTPUT and HIGH
-#define SPI0_SS_SLAVE_INIT	SPI0_SS_DDR &= ~(1<<SPI0_SS_DDR_BIT);SPI0_SS_PORT |= SPI0_SS_PORT_BIT	//
-
-#define SPI0_MISO_RELEASE			DDRB &= ~(1<<DDRB4);PORTB|=(1<<PORTB4)			// Input with pull-up
-#define SPI0_SCK_RELEASE			DDRB &= ~(1<<DDRB5);PORTB|=(1<<PORTB5)			// Input with pull-up
-#define	SPI0_MOSI_RELEASE			DDRB &= ~(1<<DDRB3);PORTB|=(1<<PORTB3)			// Input with pull-up
-#define SPI0_SS_RELEASE				DDRB &= ~(1<<DDRB2);PORTB|=(1<<PORTB2)			// Input with pull-up
-
 
 // Initialize pins for spi communication
 void spiEnable(void) {
-    DDRB |= (1<<DDRB2)|(1<<DDRB3)|(1<<DDRB5);		// Output on MOSI, SCK, and SS
-    DDRB &= ~(1<<DDRB4);							// Input on MISO
+	DDRB &= ~(1<<DDRB4);		// MISO is INPUT
+	PORTB &= ~(1<<PORTB4);		// No pull (tri-state for inputs?)
+	
+	DDRB |= (1<<DDRB3);			// MOSI output
+	PORTB &= ~(1<<PORTB3);		// Low
 
-    PORTB |= (1<<PORTB2)|(1<<PORTB4);				// Pull SS and MISO up.
-    PORTB &= ~(1<<PORTB5);							// Pull SCK down.
-	// What about MOSI? //
+	DDRB |= (1<<DDRB5);			// SCK out
+	PORTB &= ~(1<<PORTB5);		// Low
 
-	PRR0 &= ~(1<<PRSPI0);								// Clock SPI0 clock, powers the module
-	SPCR0 |= (1<<SPE)|(1<<MSTR)|(0<<SPR1)|(1<<SPR0);	// Enable SPI, set to Master, set prescaler.
+    PRR0 &= ~(1<<PRSPI0);								// Clock SPI0 clock, powers the module
+	
+	SPCR0 = (1<<SPE) | (1<<MSTR) | (0<<SPR1) | (0<<SPR0);		// Enable SPI, set to Master, set prescaler.
 }
 
 /*
@@ -60,23 +52,20 @@ void spiEnable(void) {
  * TODO: Add some fault detection: SPSR0.WCOL0
  */
 void spiDisable(void) {
-	SPCR0 &= ~(1<<SPE);								// Enable SPI.
-	PRR0 |= (1<<PRSPI0);							// Cut off SPI0 clock, shuts the module	
-	DDRB  &= ~(1<<DDRB2|1<<DDRB3|1<<DDRB4|1<<DDRB5);		// SS0, MOSI0, SCK0, MISO0. All pins are input
-	PORTB |=  (1<<PORTB2|1<<PORTB3|1<<PORTB4|1<<PORTB5);	// Pull-up enabled, reduces consumption.
+	SPCR0 = 0;											// Disable SPI.
+	PRR0 |= (1<<PRSPI0);								// Cut off SPI0 clock, shuts the module	
+	DDRB  &= ~(1<<DDRB3|1<<DDRB4|1<<DDRB5);				// MOSI0, SCK0, MISO0 pins are input
+	PORTB |=  (1<<PORTB3|1<<PORTB4|1<<PORTB5);			// Pull-up enabled, reduces consumption.
 }
 
 // When a serial transfer is complete, the SPIF flag is set.
 uint8_t spiTradeByte(uint8_t byte) {
 	SPDR0 = byte;										
-	loop_until_bit_is_set(SPSR0, SPIF);					
+	loop_until_bit_is_set(SPSR0, SPIF);			
 	return SPDR0;
 }
 
-void spiSendByte(uint8_t byte) {
-	SPDR0 = byte;								// Send byte over SPI.
-	loop_until_bit_is_set(SPSR0, SPIF);			// Wait for sending to be done.
-}
+
 
 // Shift an array out and retain returned data.
 void spiExchangeArray(uint8_t * dataout, uint8_t * datain, uint8_t len) {

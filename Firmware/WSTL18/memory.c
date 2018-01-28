@@ -136,6 +136,28 @@ uint8_t memory_status_byte_2;					// Every time Status Register 2 is read, it's 
 // Bit 1 reserved for future use.
 #define MEMORY_SR2_BSY		0		// [R] 0: Device is ready. 1: Device is busy with an internal operation.
 
+// Timing definitions from AT25DN512C datasheet.
+//							usec
+#define MEMORY_TIME_EDPD	2		// Maximum Chip Select high to deep power-down.
+#define MEMORY_TIME_EUDPD	3		// Maximum Chip Select high to ultra-deep power-down (*)
+#define MEMORY_TIME_SWRST	50		// Maximum software reset time.
+#define MEMORY_TIME_CSLU	0.02	// Minimum Chip Select low to exit ultra-deep power-down
+#define MEMORY_TIME_XUDPD	70		// Minimum exit ultra-deep power-down time
+#define MEMORY_TIME_RDPD	8		// Maximum Chip Select high to standby mode. (from Deep power-down)
+
+#define MEMORY_TIME_PP		1750	// Maximum Page Program time (256 Bytes)
+#define MEMORY_TIME_BP		8		// Typical byte program time
+#define MEMORY_TIME_PE		20000	// Maximum page erase time
+#define MEMORY_TIME_BLKE4	50000	// Maximum 4Kbytes block erase time
+#define MEMORY_TIME_BLKE32	350000	// Maximum 32Kbytes block erase time
+#define MEMORY_TIME_CHPE	700000	// Maximum Chip Erase time
+#define MEMORY_TIME_OTPP	950		// Maximum OTP Security Register program time
+#define MEMORY_TIME_WRSR	40000	// Maxirum Write Status Register time
+#define MEMORY_TIME_VCSL	70		// Minimum Vcc to Chip Select Low time
+#define MEMORY_TIME_PUW		5000	// Max Power-up device delay before Program or Erase Allowed
+// Also, device will perform a Power-On-Reset at 2.2V.
+
+
 
 uint8_t memory_flags;						// Memory-related flags set by this module. See MEMORY_FLAG_xxxxx definitions below.
 
@@ -157,10 +179,11 @@ uint8_t memory_flags;						// Memory-related flags set by this module. See MEMOR
  */
 void _memorySingleCommand(uint8_t command) {
 	MEMORY_CS_SELECT;
-	_delay_us(20);
-	spiSendByte(command);
+	spiTradeByte(command);
 	MEMORY_CS_DESELECT;
 }
+
+
 /*
  *  _memorySendAddress: Send a 3-byte address to the flash unit. This function takes a
  *	two-byte input and adds the third 0x00 since that's always 0x00 on this module.
@@ -168,9 +191,9 @@ void _memorySingleCommand(uint8_t command) {
 void _memorySendAddress(uint16_t address) {
 	uint8_t address_page = (uint8_t)(address>>8);
 	uint8_t address_byte = (uint8_t) address;
-	spiSendByte(0x00);								// Send most significant byte first.
-	spiSendByte(address_page);						// Then send middle significant byte.
-	spiSendByte(address_byte);						// Then send least significant byte.
+	spiTradeByte(0x00);								// Send most significant byte first.
+	spiTradeByte(address_page);						// Then send middle significant byte.
+	spiTradeByte(address_byte);						// Then send least significant byte.
 }
 
 
@@ -216,8 +239,9 @@ void _memoryFlagClearAll(void) {
 	the logger is power-cycled.
  */
 void memoryInitialize(void) {
-	MEMORY_CS_INIT;						// Set up pins.
+	MEMORY_CS_INIT;						// Set memory pin as output.
 	MEMORY_CS_DESELECT;					// Init but don't assert yet.
+	
 	memory_flags = 0;					// Clear memory flags.
 	memory_next_log_location = 0;		// Replace this with a memory scan. Power-cycle shouldn't overwrite existing records.
 	memory_status_byte_1 = 0;			// Replace this with reading status register.
@@ -232,9 +256,9 @@ void memoryInitialize(void) {
  * cause the temperature sensor to malfunction. 
  *
  * memoryTerminate may not be a very good name for this function.
+// Don't release CS pin, it will cause memory to possibly wake up from ultra-deep-power-down.
  */
 void memoryTerminate(void) {
-	MEMORY_CS_RELEASE;
 	; // Nothing to do here, yet.
 }
 
@@ -283,6 +307,12 @@ void memoryReadStatusRegisters(void) {
 	MEMORY_CS_DESELECT;
 }
 
+uint8_t memoryGetStatusRegister1(void) {
+	return memory_status_byte_1;
+}
+uint8_t memoryGetStatusRegister2(void) {
+	return memory_status_byte_2;
+}
 /*
  * Only two bits can be modified in register 1. The BPL bit regards the _WP_ pin, which
  * the WSTL18 doesn't use, so only the PB0 (block protection) bit could be modified. But
@@ -316,33 +346,114 @@ void memoryWriteStatusRegister2(uint8_t status) {
  */
 _Bool memoryBusy(void) {
 	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_READ_STATUS_REGISTER);
 	memory_status_byte_1 = spiTradeByte(MEMORY_READ_STATUS_REGISTER);		// Does this work?
 	MEMORY_CS_DESELECT;
 	return (memory_status_byte_1 & (1<<MEMORY_SR1_BSY));
 }
 
 /*
- *	Entering the Ultra-Deep Power-Down mode is accomplished by simply asserting the CS pin,
- *	clocking in the opcode 79h, and then deasserting the CS pin. (AT25DN512C DS p.25).
+ * Entering the Ultra-Deep Power-Down mode is accomplished by simply asserting the CS pin,
+ * clocking in the opcode 79h, and then deasserting the CS pin. (AT25DN512C DS p.25).
+ * When the CS pin is deasserted, the device will enter the ultra-deep power-down mode
+ * within the maximum time of tEUDPD. The ultra-deep power-down command will be ignored if
+ * an internally self-timed operation such as a program or erase cycle is in progress.
  */
 void memoryUltraDeepPowerDownEnter() {
+	spiEnable();
 	_memorySingleCommand(MEMORY_ULTRA_DEEP_POWER_DOWN);
+	spiDisable();
 }
+
 
 /*
  *	memoryUltraDeepPowerDownExit: Exit ultra deep power down mode.
  *
- *	This function sends a dummy byte to the memory chip. This opcode is ignored and
- *	nothing happens, but the device exits the deep power down mode as a result. Master
- *	must wait for tXUDPD (70us) before sending another command, or risk that command
- *	being ignored.
+ *Master must wait for tXUDPD (70us) before sending another command,
+ * or risk that command being ignored.
+ * "When the CS pin is deasserted, the device will exit the Deep Power-Down
+ * mode within the maximum time of tRDPD and return to the standby mode."
+
+//#define MEMORY_TIME_CSLU	0.02	// Minimum Chip Select low to exit ultra-deep power-down
+//#define MEMORY_TIME_XUDPD	70		// Minimum exit ultra-deep power-down time
  */
 void memoryUltraDeepPowerDownExit(void) {
-	_memorySingleCommand(0xDD);
-	// Wait for tXUDPD?
+	MEMORY_CS_SELECT;
+	_delay_us(1);				// Much greater than tCSLU but can't do otherwise.
+	MEMORY_CS_DESELECT;
+	_delay_us(100);				// tXUDPD, unless the device can do something else in this time.
+}
+
+/*
+ * _memoryWriteEnable: Set the Write Enable Latch (WEL) in status register to
+ * allow page/byte program, erase, program OTP security register and Write Status
+ * Register commands to write to the memory.
+ */
+void _memoryWriteEnable(void) {
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_WRITE_ENABLE);
+	MEMORY_CS_DESELECT;
+}
+
+/*
+ * _memoryWriteDisable: Clear the Write Enable Latch (WEL) in status register to
+ * prevent page/byte program, erase, program OTP security register, and Write Status
+ * Register commands from writing to the memory.
+ */
+void _memoryWriteDisable(void) {
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_WRITE_DISABLE);
+	MEMORY_CS_DESELECT;
 }
 
 
+// Bytes 0-63 are user one-time programmable.
+// OTP writing wraps over if starting after 0 and exceeding past 63. Only last 64 bytes are written.
+// Unprogrammed state is 0xFF.
+void _memoryOTPWrite(void) {
+	_memoryWriteEnable();
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_PROGRAM_OTP_SECURITY_REGISTER);
+	// 3-byte address where writing will begin. A23-A6 are ignored, A5-A0 denote number 0 to 63.
+	spiTradeByte(0x00);		// OTP Address byte 1 (A23-A16)
+	spiTradeByte(0x00);		// OTP Address byte 2 (A15-A8)
+	spiTradeByte(0x00);		// OTP Address byte 3 (A7-A0). A5-A0 actually count, 0 starts at the beginning.
+	/// ... 1 to 64 bytes of data.
+	MEMORY_CS_DESELECT;
+	// _delay_us(950);
+}
+#define MEMORY_OTP_ARRAY_LENGTH 128
+uint8_t memory_OTP_array[MEMORY_OTP_ARRAY_LENGTH];
+
+/*
+ * Read the entire OTP register. Data are loaded to module array.
+ */
+void memoryOTPLoad(void) {
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_READ_OTP_SECURITY_REGISTER);
+	spiTradeByte(0x00);		// Three address bytes
+	spiTradeByte(0x00);		// Of course we start ...
+	spiTradeByte(0x00);		// ... at start of array.
+	spiTradeByte(0x00);		// ... also send two dummy bytes
+	spiTradeByte(0x00);		// ... as required ...
+	// ... then read the entire array, including unique number (bytes 64 to 127).
+	for(uint8_t i=0; i<MEMORY_OTP_ARRAY_LENGTH; i++) {
+		memory_OTP_array[i] = spiTradeByte(0xFF);
+	}
+	MEMORY_CS_DESELECT;
+}
+
+
+void memoryOTPPrint(void) {
+	uartEnable();
+	for(uint8_t i=0; i<MEMORY_OTP_ARRAY_LENGTH; i++) {
+		uartSendByte(memory_OTP_array[i]);
+	}
+	uartDisable();
+}
+void memoryWriteTwoBytes(void) {
+
+}
 
 /*
  * memoryLogTemperature:
@@ -391,28 +502,31 @@ uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 	return 1;
 }
 
+uint8_t memory_MDID[12];
 
 void memoryReadMFDID(void) {
-	uint8_t bytebuffer[4];
-	memoryInitialize();
 
 	spiEnable();
-	_delay_us(50);
 	MEMORY_CS_SELECT;
-	spiSendByte(MEMORY_READ_MANUFACTURER_AND_DEVICE_ID);
-	spiReceiveArray(bytebuffer, sizeof(bytebuffer)/sizeof(bytebuffer[0]));
+	spiTradeByte(MEMORY_READ_MANUFACTURER_AND_DEVICE_ID);
+	for(uint8_t i=0; i<12; i++) {
+		memory_MDID[i] = spiTradeByte(0x00);
+		if( !memory_MDID[i]) {
+			break;
+		}
+	}
 	MEMORY_CS_DESELECT;
 	spiDisable();
-
-	uartEnable();
-	_delay_ms(100);		// uart wouldn't work without this delay.
-	for ( int i = 0; i<4; i++) {
-		uartSendByte(bytebuffer[i]);
-		if (bytebuffer[i] == 0x00) {
-			uartSendByte('\n');
 }
+
+void memoryPrintMFDID(void) {
+	uartEnable();
+	for (uint8_t i=0; i<12; i++) {
+		uartSendByte(memory_MDID[i]);
+		if( !memory_MDID[i]) {
+			break;
+		}
 	}
-	_delay_ms(10);	// Helps clear buffer
 	uartDisable();
 
 }

@@ -25,6 +25,7 @@
 #include <util/delay.h>
 #include "twi.h"
 #include "max30205.h"
+#include "uart.h"
 
 // !!!!!! Max first conversion time after POR is 50ms (DS p.2 bottom).
 /*
@@ -33,62 +34,47 @@
  *	the need to read the register from the device before making changes, except when reading the
  *	fault queue.
  */
-uint8_t max30205_configuration_register;
+uint8_t max30205_config;
 
 /*
  * Initialize MAX30205 sensor.
  */
-void max30205Enable(void) {
+void max30205Init(void) {
 	DDRD &= ~(1<<DDRD2); PORTD |= (1<<PORTD2);		// Set D2 as input and pull-up.
 	// No config setup; default is good.
 	twiEnable();
-	_delay_ms(10);
-	max30205_configuration_register = 0;
-	max30205Disable();
+	max30205EnterShutdown();
 	twiDisable();
 }
+
+
+void max30205EnterShutdown(void) {
+	max30205ReadConfig();
+	max30205_config |= 1<<MAX30205_CONF_SHUTDOWN;
+	max30205SaveConfig();
+	twiDWrite8(MAX30205_ADDRESS, MAX30205_REG_CONF, max30205_config);
+}
+
+
 
 /*
-To minimize power consumption by the MAX30205:
- + Set MAX30205 to shutdown mode.
- + Switch TWI off
- + Set PD2 as input with pull-up. Pull-up resistor should then have no current.
-	This is the default state of PD2 anyway.
-*/
-void max30205Disable(void) {
-	max30205_configuration_register |= (1<<MAX30205_CONF_SHUTDOWN);
-	max30205SaveConfiguration();
-	twiDisable();
+ * max30205ReadConfig: Read the configuration register into module variable and also return it.
+ */
+uint8_t max30205ReadConfig(void) {
+	max30205_config = twiDRead8(MAX30205_ADDRESS, MAX30205_REG_CONF);
+	return max30205_config;
 }
-
-void max30205Resume(void) {
-	if(max30205_configuration_register & (1<<MAX30205_CONF_SHUTDOWN)) {
-		max30205_configuration_register &= ~(1<<MAX30205_CONF_SHUTDOWN);
-		max30205SaveConfiguration();
-	}
-}
-
-
 
 /*
  *	max30205SaveConfiguration: Takes the configuration register variable from this module
  *	and stores it in the temperature sensor.
  */
-void max30205SaveConfiguration(void) {
-	twiWriteRegister8(MAX30205_ADDRESS, MAX30205_REG_CONF, max30205_configuration_register);
+void max30205SaveConfig(void) {
+	twiDWrite8(MAX30205_ADDRESS, MAX30205_REG_CONF, max30205_config);
 }
 
-uint8_t max30205ReadConfiguration(void) {
-	return twiReadRegister8(MAX30205_ADDRESS, MAX30205_REG_CONF);
-}
 
-void max30205LoadConfiguration(void) {
-	max30205_configuration_register = max30205ReadConfiguration();
-}
 
-uint8_t max30205ReadHyst(void) {
-	return twiReadRegister8(MAX30205_ADDRESS, MAX30205_REG_HYST);
-}
 /*
 	max30205StartOneShot: Trigger a one-shot on the temperature sensor while it's in shutdown mode.
 	This function only triggers the temperature conversion. Because it takes a considerable time
@@ -103,10 +89,12 @@ uint8_t max30205ReadHyst(void) {
 	
 */
 void max30205StartOneShot(void) {
-	if(max30205_configuration_register & (1<<MAX30205_CONF_SHUTDOWN)) {	// One-shot only works from shut-down mode. Ignored otherwise.
-		max30205_configuration_register |= (1<<MAX30205_CONF_ONESHOT);	// Set one-shot bit in configuration variable
-		max30205SaveConfiguration();
-		max30205_configuration_register &= ~(1<<MAX30205_CONF_ONESHOT);	// Only unset ONESHOT in variable, sensor auto-resets after one-shot completes.
+	if(max30205_config & (1<<MAX30205_CONF_SHUTDOWN)) {	// One-shot only works from shut-down mode. Ignored otherwise.
+		max30205_config |= (1<<MAX30205_CONF_ONESHOT);	// Set one-shot bit in configuration variable
+		twiEnable();
+		max30205SaveConfig();
+		twiDisable();
+		max30205_config &= ~(1<<MAX30205_CONF_ONESHOT);	// Only unset ONESHOT in variable, sensor auto-resets after one-shot completes.
 	} // else: some sort of programming fault?
 	// While in shutdown, the I2C interface remains active and all registers remain
 	// accessible to the master.
@@ -125,5 +113,9 @@ void max30205StartOneShot(void) {
 	for optimization. This module only offers these two functions and nothing above them.
  */
 uint16_t max30205ReadTemperature(void) {
-	return twiReadRegister16(MAX30205_ADDRESS, MAX30205_REG_TEMP);
+	uint16_t temperature;
+	twiEnable();
+	temperature = twiDRead16(MAX30205_ADDRESS, MAX30205_REG_TEMP);
+	twiDisable();
+	return temperature;
 }
