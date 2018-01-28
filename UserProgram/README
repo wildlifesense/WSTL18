@@ -1,0 +1,10 @@
+The WSTL18 is a low cost/power/size temperature logger. Its only interface for
+setup and data acquisition is through the UART interface. It is meant to connect
+to a host computer or portable field device for initial setup and to download
+temperature log data at the end of deployment.
+
+While I intend to fully open-source release a GUI program to manage WSTL18
+loggers, current deadlines mean I have to resort to a quick and functional
+program to do the job. For now, this is a python (3.5+) script that will do the
+job as long as you have a python installation with the serial library instlled.
+
