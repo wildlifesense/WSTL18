@@ -2,7 +2,7 @@
 
   main.c: The main routine of the WSTL18 firmware.
  
-  Copyright (C) 2017 Nikos Vallianos <nikos@wildlifesense.com>
+  Copyright (C) 2017-2018 Nikos Vallianos <nikos@wildlifesense.com>
   
   This file is part of WSTL18 firmware.
   
@@ -46,6 +46,13 @@ int main(void) {
     while (1) {
 		sleep_mode();
 		wstl18Blink();
+		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for WSTL18P1. Use PD2 for WSTL18P2/P3
+			uartEnable();
+			uartSendString("xWSTL18");
+			uartDisable();
+
+			wstl18Blink();
+		}
 /*
 		max30205StartOneShot();
 		_delay_ms(50);
@@ -54,6 +61,7 @@ int main(void) {
 		temp_LSB = (uint8_t) temperature;
 */		
 		// Send data over uart
+		/*
 		uartEnable();
 		uartSendByte('-');
 		uartSendByte(1);
@@ -67,5 +75,6 @@ int main(void) {
 		memoryPrintMFDID();
 
 		memoryUltraDeepPowerDownEnter();
+		*/
 	   }
 }
