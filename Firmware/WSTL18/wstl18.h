@@ -24,7 +24,14 @@
 #ifndef WSTL18_H_
 #define WSTL18_H_
 
+// Module
 void wstl18Init(void);
-void wstl18Blink(void);
+
+// Command
+void wstl18CommandClear(void);
+void wstl18CommandAppend(char appended);
+void wstl18CommandInterruptHandler();
+void wstl18CommandPrint(void);
+void wstl18CommandReceive(void);
 
 #endif /* WSTL18_H_ */

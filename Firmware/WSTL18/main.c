@@ -24,6 +24,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/sleep.h>
+#include <avr/interrupt.h>
 #include "uart.h"
 #include "wstl18.h"
 #include "led.h"		// Remove
@@ -31,28 +32,32 @@
 #include "memory.h"
 #include "spi.h"
 #include "max30205.h"
+#include "indicator.h"
+
+
+
+ISR(USART0_RX_vect) {
+	wstl18CommandInterruptHandler();
+}
+
 
 int main(void) {
 	wstl18Init();
 	max30205Init();
 	memoryInitialize();
-
-	spiEnable();
-	memoryOTPLoad();
-	spiDisable();
-	memoryOTPPrint();
-	
 	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
     while (1) {
 		sleep_mode();
-		wstl18Blink();
+		indicatorShortBlink();
 		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for WSTL18P1. Use PD2 for WSTL18P2/P3
-			uartEnable();
-			uartSendString("xWSTL18");
-			uartDisable();
-
-			wstl18Blink();
+			wstl18CommandClear();
+			wstl18CommandReceive();
 		}
+	}
+}
+
+
+
 /*
 		max30205StartOneShot();
 		_delay_ms(50);
@@ -76,5 +81,3 @@ int main(void) {
 
 		memoryUltraDeepPowerDownEnter();
 		*/
-	   }
-}

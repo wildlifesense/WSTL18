@@ -60,7 +60,7 @@ void rtcStart(void) {
 	TCCR2B	|= (1<<CS20)|(1<<CS21)|(1<<CS22);						// Tosc/1024 prescaler = 8sec to overflow.
 	TIMSK2	= 0;
 	TIMSK2	|= (1<<TOIE2);											// Enable overflow interrupt
-	_delay_ms(1000);												// Allow RTC crystal to stabilize (RTC AN p.5).
+	//_delay_ms(1000);												// Allow RTC crystal to stabilize (RTC AN p.5).
 	TCNT2	= 0;													// Clear counter value.
 	sei();
 	interval_limit = 75;											// Default to 10 minutes.

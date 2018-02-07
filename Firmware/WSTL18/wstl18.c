@@ -23,18 +23,23 @@
   ********************************************************************************/
 #include <avr/io.h>
 #include <util/delay.h>
+#define SIGRD 5					// reading ID may not work without this
+#include <avr/boot.h>
 #include "twi.h"
 #include "spi.h"
 #include "memory.h"
 #include "max30205.h"
 #include "uart.h"
 #include "rtc.h"
-#include "led.h"
+#include "indicator.h"
 #include "wstl18.h"
 
-#define WSTL18_COMMAND_LENGTH	16
-char wstl18_command_buffer[WSTL18_COMMAND_LENGTH];	// Stores currently received command and setup.
-uint8_t	wstl18_command_index;						// Points to current location in buffer.
+#define WSTL18_COMMAND_BUFFER_LENGTH	20
+#define WSTL18_COMMAND_RECEIVE_TIMEOUT	50					// Time window to receive command, in ms
+
+volatile uint8_t wstl18_command_index;								// Points to current location in buffer.
+volatile char wstl18_command_buffer[WSTL18_COMMAND_BUFFER_LENGTH];	// Received command.
+
 
 uint8_t wstl18_flags;					// Flags to indicate status of device. POR defaults to 0x00.
 #define WSTL18_FLAG_LOGGING		0		// Is the device currently logging? 0: No, 1: Yes
@@ -59,7 +64,17 @@ void _wstl18ClearFlag(uint8_t flag_to_clear) {
 	wstl18_flags &= ~(1<<flag_to_clear);
 }
 
-
+// http://www.avrfreaks.net/forum/unique-id-atmega328pb
+void wstl18GetUniqueId(void) {
+	boot_lock_fuse_bits_get(1);
+	boot_lock_fuse_bits_get(2);
+	boot_lock_fuse_bits_get(3);
+	boot_lock_fuse_bits_get(0);
+	
+	boot_signature_byte_get(0); // 0-4 is signature, 14-23 is serial number.
+	
+	
+}
 void wstl18Init(void) {
 	// Disable brown-out detector in sleep mode.
 	MCUCR |= (1<<BODSE)|(1<<BODS);
@@ -95,9 +110,8 @@ void wstl18Init(void) {
 	//Digital input buffers can be disabled by writing to the Digital Input Disable Registers (DIDR0 for ADC, DIDR1 for AC). (found at http://microchipdeveloper.com/8avr:avrsleep)
 	//If the On-chip debug system is enabled by the DWEN Fuse and the chip enters sleep mode, the main clock source is enabled and hence always consumes power. In the deeper sleep modes, this will contribute significantly to the total current consumption.
 
-	ledInit();
+	indicatorInitialize();
 	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
-	_delay_ms(1000);
 }
 
 
@@ -113,12 +127,47 @@ void wstl18CommandClear(void) {
  * overflow bit in the system's flag byte.
  */
 void wstl18CommandAppend(char appended) {
-	if(wstl18_command_index < WSTL18_COMMAND_LENGTH) {
+	if(wstl18_command_index < WSTL18_COMMAND_BUFFER_LENGTH) {
 		wstl18_command_buffer[wstl18_command_index] = appended;
 		wstl18_command_index++;
 	} else {
 		wstl18_flags |= (1<<WSTL18_FLAG_COMMAND_OVF);
 	}
+}
+
+void wstl18CommandInterruptHandler() {
+	wstl18_command_buffer[wstl18_command_index] = UDR0;
+	wstl18_command_index++;
+}
+
+
+void wstl18CommandPrint(void) {
+	for (uint8_t i=0; i<=wstl18_command_index; i++) {
+		uartSendByte(wstl18_command_buffer[i]);
+	}
+}
+
+
+
+void command_clear(void) {
+	for(uint8_t i=0; i<WSTL18_COMMAND_BUFFER_LENGTH; i++) {
+		wstl18_command_buffer[i] = 0;
+	}
+	wstl18_command_index = 0;
+}
+
+uint8_t command_verify(void) {
+	if (wstl18_command_index && (wstl18_command_buffer[wstl18_command_index-1] == '!'))
+	return 1;
+	else
+	return 0;
+}
+void wstl18CommandReceive(void) {
+	uartEnable();
+	uartRxInterruptEnable();
+	uartSendByte('x');			// Should be 'x' + 6 ID bytes
+	_delay_ms(WSTL18_COMMAND_RECEIVE_TIMEOUT);	// Delay instead of received-check prevents lock-down.
+	uartDisable();
 }
 
 /*
@@ -149,7 +198,7 @@ void wstl18CommandBeginLogging() {
  */
 void wstl18CommandRespond(void) {
 	if (wstl18_command_index > 0) {			// Received at least one command character.
-		if (wstl18_command_index < WSTL18_COMMAND_LENGTH) {
+		if (wstl18_command_index < WSTL18_COMMAND_BUFFER_LENGTH) {
 			switch(wstl18_command_buffer[0]) {
 				case 'D':
 					;		// Dump data over uart.
@@ -199,10 +248,4 @@ uint16_t wstl18DoLog(void) {
 	max30205StartOneShot();
 	_delay_ms(50);	//Max 50ms. Try to do other stuff here and reduce delay accordingly.
 	return max30205ReadTemperature();
-}
-
-void wstl18Blink(void) {
-	PORTE |= (1<<PORTE2);
-	_delay_ms(1);
-	PORTE &= ~(1<<PORTE2);
 }

@@ -24,13 +24,15 @@
 #ifndef UART_H_
 #define UART_H_
 
-void USART_Init(void);
 // UART module control
 void uartEnable(void);
 void uartDisable(void);
 
+void uartRxInterruptEnable(void);
+void uartRxInterruptDisable(void);
 // UART data exchange
 void uartSendByte(uint8_t data);
+uint8_t uartReceiveByte(void);
 void uartSendString(const char myString[]);
 void uartPrintWord(uint16_t word);
 void uartPrintBinaryByte(uint8_t byte);

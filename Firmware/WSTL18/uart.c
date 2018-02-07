@@ -52,20 +52,6 @@ ISR(USART0_RX_vect) {
 }
  */
 
-void USART_Init(void)
-{
-	/*Set baud rate */
-	cli();
-	PRR0 &= ~(1<<PRUSART0);
-
-	UBRR0 = 0;
-	UCSR0A |= (1<<U2X0);
-	//Enable receiver and transmitter
-	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
-	/* Set frame format: 8data, 2stop bit */
-	UCSR0C = (1<<USBS0)|(1<<UCSZ00)|(1<<UCSZ01);
-	sei();
-}
 
 
 void uartEnable(void) {
@@ -84,13 +70,27 @@ void uartEnable(void) {
 void uartDisable(void) {
 	_delay_us(25);						// Needed to avoid problems if uart disabled before a sleep.
 	//Debug: See what the status is here.
-	UCSR0B &= ~(1<<RXEN0|1<<TXEN0);			// Disable UART transmitter, receiver, and RX complete interrupt.
+	UCSR0B &= ~(1<<RXEN0|1<<TXEN0|1<<RXCIE0);			// Disable UART transmitter, receiver, and RX complete interrupt.
 	PRR0 |= (1<<PRUSART0);
 	DDRD &= ~((1<<DDRD0)|(1<<DDRD1));						// Set pins PD0 and PD1 to input with pull-up.
 	PORTD |= ((1<<PORTD0)|(1<<PORTD1));						// RX0 is PD0, TX0 is PD1
 }
 
+/*
+ * uartInterruptEnable: If UART module is on, enable UART RX complete interrupt (USART0_RX_vect)
+ */
+void uartRxInterruptEnable(void) {
+	if( UCSR0B & 1<<RXEN0 ) {	// Only if UART0 module is on
+		UCSR0B |= 1<<RXCIE0;
+	}
+}
 
+/*
+ * uartInterruptDisable: Disable uart RX complete interrupt
+ */
+void uartRxInterruptDisable(void) {
+	UCSR0B &= 1<<RXCIE0;
+}
 
 // Send a byte over usart.
 void uartSendByte(uint8_t data) {
@@ -98,6 +98,14 @@ void uartSendByte(uint8_t data) {
 	UDR0 = data;
 }
 
+
+uint8_t uartReceiveByte(void) {
+	/* Wait for data to be received */
+	while ( !(UCSR0A & (1<<RXC0)) )
+	;
+	/* Get and return received data from buffer */
+	return UDR0;
+}
 
 /*
  * Send a string of up to 255 characters over USART
