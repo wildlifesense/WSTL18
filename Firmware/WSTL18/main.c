@@ -26,23 +26,23 @@
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
 #include "uart.h"
-#include "wstl18.h"
-#include "led.h"		// Remove
-#include "rtc.h"		// Remove
-#include "memory.h"
 #include "spi.h"
+#include "wstl18.h"		// remove
+#include "system.h"
+#include "memory.h"
 #include "max30205.h"
 #include "indicator.h"
+#include "host.h"
 
 
 
 ISR(USART0_RX_vect) {
-	wstl18CommandInterruptHandler();
+	hostCommandInterruptHandler();
 }
 
 
 int main(void) {
-	wstl18Init();
+	systemInit();
 	max30205Init();
 	memoryInitialize();
 	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
@@ -50,8 +50,8 @@ int main(void) {
 		sleep_mode();
 		indicatorShortBlink();
 		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for WSTL18P1. Use PD2 for WSTL18P2/P3
-			wstl18CommandClear();
-			wstl18CommandReceive();
+			hostCommandClear();
+			hostCommandReceive();
 		}
 	}
 }

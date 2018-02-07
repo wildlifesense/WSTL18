@@ -138,13 +138,25 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="error.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="error.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="host.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="host.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="indicator.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="indicator.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="led.c">
+    <Compile Include="system.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">
@@ -174,6 +186,9 @@
     <Compile Include="spi.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="system.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="twi.c">
       <SubType>compile</SubType>
     </Compile>
@@ -187,9 +202,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="wstl18.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="wstl18.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
