@@ -1,17 +1,17 @@
 /********************************************************************************
 
-  main.c: The main routine of the WSTL18 firmware.
+  main.c: The main routine of the NestProbe TL1 firmware.
  
   Copyright (C) 2017-2018 Nikos Vallianos <nikos@wildlifesense.com>
   
-  This file is part of WSTL18 firmware.
+  This file is part of NestProbe TL1 firmware.
   
-  WSTL18 firmware is free software: you can redistribute it and/or modify
+  NestProbe TL1 firmware is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  WSTL18 firmware is distributed in the hope that it will be useful,
+  NestProbe TL1 firmware is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
@@ -24,22 +24,13 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/sleep.h>
-#include <avr/interrupt.h>
 #include "uart.h"
 #include "spi.h"
-#include "wstl18.h"		// remove
 #include "system.h"
 #include "memory.h"
 #include "max30205.h"
 #include "indicator.h"
 #include "host.h"
-
-
-
-ISR(USART0_RX_vect) {
-	hostCommandInterruptHandler();
-}
-
 
 int main(void) {
 	systemInit();
@@ -48,11 +39,10 @@ int main(void) {
 	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
     while (1) {
 		sleep_mode();
-		indicatorShortBlink();
-		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for WSTL18P1. Use PD2 for WSTL18P2/P3
-			hostCommandClear();
+		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for NestProbe TL1P1. Use PD2 for NestProbe TL1P2/P3
 			hostCommandReceive();
 		}
+		indicatorShortBlink();
 	}
 }
 

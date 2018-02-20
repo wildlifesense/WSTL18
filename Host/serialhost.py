@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 #
 # This software is open source bla bla bla (I'll refine this later)
+# 
+# Nice example for pyserial logging into a file:
+# https://github.com/gskielian/Arduino-DataLogging/blob/master/PySerial/README.md
 #
 import time
 import pytz
@@ -10,7 +13,12 @@ import signal
 import datetime
 import calendar
 import pytz
+import ntplib
+import intelhex                         # (install with) sudo pip3 install intelhex
 from serial.tools import list_ports
+
+# ih = intelhex.IntelHex("Readout.hex")
+# ih[0]    # ... is first byte, given as an integer. Must convert to b'' before writing via serial.
 
 dt_utc = datetime.datetime.fromtimestamp(datetime.datetime.utcnow().timestamp())
 dt_local =  datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp())
@@ -18,14 +26,26 @@ local_timezone = time.tzname[0]
 local_dst = time.localtime().tm_isdst
 local_pytz = pytz.timezone(local_timezone)
 
-logging_interval_eightseconds = {   1:75,
-                                    2:225,
-                                    3:450,
-                                    4:1350,
-                                    5:2700,
-                                    6:5400,
-                                    7:10800 }
-# Set up a handler for Ctrl+c
+# Use NTP to calculate computer clock offset to UTC.
+c = ntplib.NTPClient()
+try:
+    ntp_object = c.request('europe.pool.ntp.org', version=4)
+except:
+    time_offset = 0.0
+    time_method = "L"                       # 'L' stands for local.
+else:
+    time_offset = ntp_object.offset
+    time_method = "N"                       # 'N' stands for network.
+del(c, ntp_object)                          # Don't need these any more.
+
+logging_interval_eightseconds = {   1:75,                   # 10 minutes
+                                    2:225,                  # 30 minutes
+                                    3:450,                  #  1 hour
+                                    4:1350,                 #  3 hours
+                                    5:2700,                 #  6 hours
+                                    6:5400,                 # 12 hours
+                                    7:10800 }               # 24 hours
+
 def interval_text(eightseconds):
     intext = ""
     seconds = eightseconds*8%60
@@ -43,6 +63,18 @@ def interval_text(eightseconds):
         intext = intext + "%d second%s" % (seconds, "s" if seconds>1 else "")
     return(intext)
 
+def gettime():
+    c = ntplib.NTPClient()
+    try:
+        ltime = c.request('europe.pool.ntp.org', version=4).tx_time
+    except ntplib.NTPException:
+        return(0)
+    return(ltime)
+
+
+
+
+# Set up a handler for Ctrl+c
 def sigint_handler(sig_number, frame):
     print("\n\nI hope this wasn't messy.")
     quit()
@@ -78,11 +110,11 @@ def localToUtc(zonename, naive_datetime):
 def get_logging_start():
     while(1):
         print("\nPlease enter local date and time you would like logging to begin at.")
-        print("This can be up to one month from now.")
+        print("This can be up to six days from now.")
         ltime = time.localtime()
 
         # Get the year
-        if ltime.tm_mon == 12:
+        if ltime.tm_mon == 12 and ltime.tm_day > 24:
             f_year = input("Year? (%d or %d) " % (ltime.tm_year, ltime.tm_year+1))
             if f_year.isdigit():
                 f_year = int(f_year)
@@ -168,9 +200,9 @@ def get_logging_interval():
 # Running program
 #
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGINT, sigint_handler)        # Set handler for ctrl+c.
     version = "0.1"
-    print("Wildlife Sense Temperature Logger WSTL18 manager, version %s" % version)
+    print("Wildlife Sense , version %s" % version)
     print("This is free software under the terms of GPL v3.0. See COPYING for details.")
     print("\nPress Ctrl+c to exit program.")
 
@@ -235,7 +267,7 @@ if __name__ == "__main__":
                         'D: Download data from logger',
 
                         'B: Begin logging immediately',
-                        'F: Begin logging at a future time, up to one month away',
+                        'F: Begin logging at a future time, up to six days away',
 
                         'E: End logging',
                         'C: Clear logger (only possible after data downloaded)']

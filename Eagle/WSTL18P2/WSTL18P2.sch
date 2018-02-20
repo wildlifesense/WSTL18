@@ -1083,12 +1083,19 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </library>
 <library name="Connectors">
 <packages>
-<package name="4_PIN_0.1INCH_POGO_PADS_ANGLE">
-<smd name="1" x="-2.54" y="2.54" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
-<smd name="2" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
-<smd name="3" x="-2.54" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
-<smd name="4" x="-5.08" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
-<text x="0" y="1.27" size="0.8128" layer="25" font="vector" ratio="12" align="center">&gt;NAME</text>
+<package name="4_PIN_0.1&quot;_POGO_ANGLE_CENTERED">
+<smd name="1" x="0" y="2.54" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<smd name="2" x="2.54" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<smd name="3" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<smd name="4" x="-2.54" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+<text x="0" y="-1.651" size="0.8128" layer="25" font="vector" ratio="12" align="center">&gt;NAME</text>
+<circle x="0" y="0" radius="0.9919" width="0.254" layer="21"/>
+<circle x="-2.54" y="0" radius="0.9919" width="0.254" layer="21"/>
+<circle x="0" y="2.54" radius="0.9919" width="0.254" layer="21"/>
+<circle x="2.54" y="0" radius="0.9919" width="0.254" layer="21"/>
+<wire x1="-1.4986" y1="0" x2="-1.0414" y2="0" width="0.3048" layer="21"/>
+<wire x1="1.0414" y1="0" x2="1.4986" y2="0" width="0.3048" layer="21"/>
+<wire x1="0" y1="1.0414" x2="0" y2="1.4986" width="0.3048" layer="21"/>
 </package>
 </packages>
 <symbols>
@@ -1106,12 +1113,12 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </symbol>
 </symbols>
 <devicesets>
-<deviceset name="4_PIN_0.1_INCH_POGO_CONN_ANGLE">
+<deviceset name="4_PIN_0.1_INCH_POGO_CONN_ANGLE_CENTERED">
 <gates>
 <gate name="G$1" symbol="4_PIN_CONNECTOR" x="0" y="0"/>
 </gates>
 <devices>
-<device name="" package="4_PIN_0.1INCH_POGO_PADS_ANGLE">
+<device name="" package="4_PIN_0.1&quot;_POGO_ANGLE_CENTERED">
 <connects>
 <connect gate="G$1" pin="1" pad="1"/>
 <connect gate="G$1" pin="2" pad="2"/>
@@ -1177,7 +1184,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <part name="VCC3" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="VCC4" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
 <part name="VCC7" library="SparkFun-Aesthetics" deviceset="5V" device="" value="VCC"/>
-<part name="UART" library="Connectors" deviceset="4_PIN_0.1_INCH_POGO_CONN_ANGLE" device=""/>
+<part name="UART" library="Connectors" deviceset="4_PIN_0.1_INCH_POGO_CONN_ANGLE_CENTERED" device=""/>
 <part name="U$1" library="Battery_holders" deviceset="LINX-CR2032-BAT-HLD-M-THM" device=""/>
 <part name="C6" library="Passives" deviceset="CAP_0402_CERAMIC" device=""/>
 <part name="C7" library="Passives" deviceset="CAP_0402_CERAMIC" device=""/>

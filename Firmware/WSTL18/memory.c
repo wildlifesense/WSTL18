@@ -52,9 +52,8 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "spi.h"
-#include "memory.h"
 #include "uart.h"		// Debugging use only
-#include "wstl18.h"
+#include "memory.h"
 
 
 // Flash parameters
@@ -72,6 +71,7 @@ uint16_t memory_next_log_location;				// Where will the next temperature log be 
 uint8_t memory_status_byte_1;					// Every time Status Register 1 is read, it's also saved here.
 uint8_t memory_status_byte_2;					// Every time Status Register 2 is read, it's also saved here.
 
+uint8_t memory_MDID[12];
 
 
 
@@ -444,13 +444,6 @@ void memoryOTPLoad(void) {
 }
 
 
-void memoryOTPPrint(void) {
-	uartEnable();
-	for(uint8_t i=0; i<MEMORY_OTP_ARRAY_LENGTH; i++) {
-		uartSendByte(memory_OTP_array[i]);
-	}
-	uartDisable();
-}
 void memoryWriteTwoBytes(void) {
 
 }
@@ -502,7 +495,6 @@ uint8_t memoryLogTemperature(uint16_t temperature_reading) {
 	return 1;
 }
 
-uint8_t memory_MDID[12];
 
 void memoryReadMFDID(void) {
 
@@ -517,16 +509,4 @@ void memoryReadMFDID(void) {
 	}
 	MEMORY_CS_DESELECT;
 	spiDisable();
-}
-
-void memoryPrintMFDID(void) {
-	uartEnable();
-	for (uint8_t i=0; i<12; i++) {
-		uartSendByte(memory_MDID[i]);
-		if( !memory_MDID[i]) {
-			break;
-		}
-	}
-	uartDisable();
-
 }

@@ -1,17 +1,17 @@
 ﻿/********************************************************************************
 
-  max30205.c: MAX30205 temperature sensor module of WSTL18 firmware.
+  max30205.c: MAX30205 temperature sensor module of NestProbe TL1 firmware.
  
   Copyright (C) 2017 Nikos Vallianos <nikos@wildlifesense.com>
   
-  This file is part of WSTL18 firmware.
+  This file is part of NestProbe TL1 firmware.
   
-  WSTL18 firmware is free software: you can redistribute it and/or modify
+  NestProbe TL1 firmware is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  WSTL18 firmware is distributed in the hope that it will be useful,
+  NestProbe TL1 firmware is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.

@@ -1002,7 +1002,7 @@ SENSE</text>
 <hole x="18.542" y="19.685" drill="0.6"/>
 <hole x="16.002" y="17.145" drill="0.6"/>
 <wire x1="18.8214" y1="2.8702" x2="23.5458" y2="7.5946" width="0.0254" layer="20"/>
-<hole x="25.654" y="16.256" drill="0.6"/>
+<hole x="25.146" y="16.256" drill="0.6"/>
 <wire x1="23.5458" y1="7.5946" x2="23.7883" y2="8.04285625" width="0.0254" layer="20"/>
 <wire x1="23.7883" y1="8.04285625" x2="25.63595" y2="9.144" width="0.0254" layer="20" curve="-61.587374"/>
 <wire x1="25.63595" y1="9.144" x2="27.432" y2="7.34795" width="0.0254" layer="20" curve="-90"/>
@@ -1022,9 +1022,9 @@ SENSE</text>
 <wire x1="27.432" y1="18.81405" x2="25.63595" y2="17.018" width="0.0254" layer="20" curve="-90"/>
 <wire x1="25.63595" y1="17.018" x2="23.85631875" y2="18.153315625" width="0.0254" layer="20" curve="-65.071676"/>
 <wire x1="23.85631875" y1="18.153315625" x2="23.5458" y2="18.8214" width="0.0254" layer="20"/>
-<hole x="25.654" y="14.224" drill="0.6"/>
-<hole x="25.654" y="11.938" drill="0.6"/>
-<hole x="25.654" y="9.906" drill="0.6"/>
+<hole x="25.146" y="14.732" drill="0.6"/>
+<hole x="25.146" y="11.684" drill="0.6"/>
+<hole x="25.146" y="10.16" drill="0.6"/>
 <hole x="26.924" y="16.256" drill="0.6"/>
 <hole x="27.432" y="10.414" drill="0.6"/>
 <wire x1="34.544" y1="7.366" x2="34.544" y2="5.842" width="0.4064" layer="21"/>
@@ -1043,6 +1043,7 @@ SENSE</text>
 <text x="39.37" y="18.542" size="0.8128" layer="21" font="vector" ratio="12" align="center">GND</text>
 <text x="39.624" y="21.082" size="0.8128" layer="21" font="vector" ratio="12" align="center">TX</text>
 <text x="39.624" y="23.622" size="0.8128" layer="21" font="vector" ratio="12" align="center">RX</text>
+<hole x="25.146" y="13.208" drill="0.6"/>
 </plain>
 <libraries>
 <library name="Passives">

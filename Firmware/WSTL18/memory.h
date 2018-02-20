@@ -44,7 +44,6 @@ _Bool memoryBusy(void);												// Is the memory currently busy?
 void memoryUltraDeepPowerDownEnter();								// Enter ultra-deep power down mode.
 void memoryUltraDeepPowerDownExit();								// Exit ultra-deep power down mode.
 void memoryOTPLoad(void);
-void memoryOTPPrint(void);
 uint8_t memoryLogTemperature(uint16_t temperature_reading);			// Stores 16-bit temperature in memory, returns flags.
 
 void memoryReadMFDID(void);
