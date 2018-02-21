@@ -32,7 +32,6 @@
 #include <util/delay.h>
 #include "rtc.h"
 #include "error.h"
-
 #include "uart.h"
 #include "spi.h"
 #include "system.h"
@@ -56,20 +55,22 @@ uint16_t logger_countdown;
 uint16_t interval_limit;				// How many eight seconds counts till logging interval reached.
 volatile uint32_t total_eightseconds_counter;			// Count of eight seconds intervals since start of timer.
 
-#define SYSTEM_FIRMWARE_MAJOR 0		// Range 0-9 then A-F
-#define SYSTEM_FIRMWARE_MINOR 1		// Range 0-9 then A-F
+#define FIRMWARE_VERSION_MAJOR 0		// 0-16 so it can squeeze into left-half of 8-bit value.
+#define FIRMWARE_VERSION_MINOR 1		// 0-16 so it can squeeze into right-half of 8-bit value.
+#define FIRMWARE_GET_VERSION ((uint8_t)(FIRMWARE_VERSION_MAJOR<<4|FIRMWARE_VERSION_MINOR))	// Get version in one byte.
 
-#define _SYSTEM_RX_BUFFER_LENGTH 128
-volatile uint8_t _system_rx_buffer_index;								// Points to current writing location in buffer.
-volatile uint8_t _system_rx_buffer_array[_SYSTEM_RX_BUFFER_LENGTH];		// Buffer for bytes received through uart.
+#define RX_BUFFER_LENGTH 128
+volatile uint8_t rx_buffer_index;						// Points to current writing location in buffer.
+volatile uint8_t rx_buffer_array[RX_BUFFER_LENGTH];		// Buffer for bytes received through uart.
 
-uint8_t system_id[3];					// Identifies a 328PB.
-uint8_t system_serial_number[10];				// Unique serial number.
-// Firmware and bootloader parameters.
-uint16_t _system_firmware_crc;
-uint16_t _system_firmware_last_byte;	// Byte address of last byte of current firmware. Helps calculate firmware size and CRC.
-uint16_t _system_bootloader_start;		// Byte address of first bootloader byte. Depends on BOOTSZ fuses.
-uint16_t _system_available_pages;		// Number of pages available for application firmware.
+uint8_t mcu_id[3];						// Identifies a 328PB.
+uint8_t mcu_serial_number[10];			// Unique serial number.
+
+// MCU flash memory firmware and bootloader parameters.
+uint16_t mcu_bootloader_first_byte;			// Byte address of first bootloader byte. Depends on BOOTSZ fuses.
+uint16_t mcu_firmware_available_pages;		// Number of pages available for application firmware.
+uint16_t mcu_firmware_last_byte;			// Byte address of last byte of current firmware. Helps calculate firmware size and CRC.
+uint16_t mcu_firmware_crc16_xmodem;			// Xmodem-CRC16 of mcu firmware.
 
 
 /*
@@ -80,25 +81,20 @@ ISR(TIMER2_OVF_vect) {
 }
 
 
-#define HOST_COMMAND_BUFFER_LENGTH	128
 #define HOST_COMMAND_RECEIVE_TIMEOUT	200					// Time window to receive command, in ms
 
-volatile uint8_t _host_command_index;								// Points to current location in buffer.
-volatile char _host_command_buffer[HOST_COMMAND_BUFFER_LENGTH];		// Received command.
 
 ISR(USART0_RX_vect) {
 	hostCommandInterruptHandler();
 }
 /*******************************/
 void hostCommandInterruptHandler() {
-	_host_command_buffer[_host_command_index] = UDR0;
-	_host_command_index++;
+	rx_buffer_array[rx_buffer_index] = UDR0;
+	rx_buffer_index++;
 }
 /*******************************/
 
-uint8_t systemGetVersion(void) {
-	return (uint8_t) (SYSTEM_FIRMWARE_MAJOR<<4|SYSTEM_FIRMWARE_MINOR);
-}
+
 
 
 
@@ -155,13 +151,13 @@ int main(void) {
 	memoryInitialize();
 
 	// Load MCU ID.
-	system_id[0] = boot_signature_byte_get(0);
-	system_id[1] = boot_signature_byte_get(2);
-	system_id[2] = boot_signature_byte_get(4);
+	mcu_id[0] = boot_signature_byte_get(0);
+	mcu_id[1] = boot_signature_byte_get(2);
+	mcu_id[2] = boot_signature_byte_get(4);
 	
 	// Load MCU serial number.
 	for (uint8_t i=0; i<10; i++) {
-		system_serial_number[i] = boot_signature_byte_get(i+14);	// Read signature bytes 14-23
+		mcu_serial_number[i] = boot_signature_byte_get(i+14);	// Read signature bytes 14-23
 	}
 
 	// Load bootloader start address and firmware available pages
@@ -170,21 +166,21 @@ int main(void) {
 	bootsz_bits = bootsz_bits >> 1;									// Move bootsz bits to base
 	bootsz_bits = ~(bootsz_bits) & 0b11;							// Reverse bootsz bits and filter out other bits
 	// Bootsz bits are now 0-3 representing 4, 8, 16, or 32 pages of boot sector.
-	_system_bootloader_start = 0x8000 - (1<<bootsz_bits)*512;		// bootsector size = math.pow(2, bootsz) * 512
-	_system_available_pages = _system_bootloader_start / SPM_PAGESIZE;
+	mcu_bootloader_first_byte = 0x8000 - (1<<bootsz_bits)*512;		// bootsector size = math.pow(2, bootsz) * 512
+	mcu_firmware_available_pages = mcu_bootloader_first_byte / SPM_PAGESIZE;
 
 	// Find the last byte of firmware in flash.
-	for (uint16_t k=(_system_bootloader_start-1); k>0; k--) {
+	for (uint16_t k=(mcu_bootloader_first_byte-1); k>0; k--) {
 		if (pgm_read_byte(k) != 0xFF) {
-			_system_firmware_last_byte = k;
+			mcu_firmware_last_byte = k;
 			break;
 		}
 	}
 
 	// Calculate firmware xmodem CRC16
-	_system_firmware_crc = 0;
-	for (uint16_t i=0; i<=_system_firmware_last_byte; i++) {
-		_system_firmware_crc = _crc_xmodem_update(_system_firmware_crc, pgm_read_byte(i));
+	mcu_firmware_crc16_xmodem = 0;
+	for (uint16_t i=0; i<=mcu_firmware_last_byte; i++) {
+		mcu_firmware_crc16_xmodem = _crc_xmodem_update(mcu_firmware_crc16_xmodem, pgm_read_byte(i));
 	}
 
 
@@ -209,57 +205,33 @@ int main(void) {
 			hostCommandReceive();
 		}
 		indicatorShortBlink();
-	}
-}
+	}// END OF MAIN LOOP
+}// END OF MAIN
 
 
 
-/*
-		max30205StartOneShot();
-		_delay_ms(50);
-		temperature = max30205ReadTemperature();
-		temp_MSB = (uint8_t) (temperature>>8);
-		temp_LSB = (uint8_t) temperature;
-*/		
-		// Send data over uart
-		/*
-		uartEnable();
-		uartSendByte('-');
-		uartSendByte(1);
-		uartSendByte(2);
-		uartSendByte('+');
-		uartDisable();
-	
-		memoryUltraDeepPowerDownExit();
-		
-		memoryReadMFDID();
-		memoryPrintMFDID();
-
-		memoryUltraDeepPowerDownEnter();
-		*/
-		
 
 /*
  * Clear the rx buffer and its index.
  */
-void systemRxBufferClear(void) {
-	for(uint8_t i=0; i<_SYSTEM_RX_BUFFER_LENGTH; i++) {
-		_system_rx_buffer_array[i] = 0;
+void rxBufferClear(void) {
+	for(uint8_t i=0; i<RX_BUFFER_LENGTH; i++) {
+		rx_buffer_array[i] = 0;
 	}
-	_system_rx_buffer_index = 0;
+	rx_buffer_index = 0;
 }
 
 
 void hostCommandReceive(void) {
-	hostCommandClear();
+	rxBufferClear();
 	uartEnable();
 	uartRxInterruptEnable();
 	uartSendString("TL1");
 	for (uint8_t i=0; i<3; i++) {	// 3 ID bytes
-		uartSendByte(systemGetId(i));
+		uartSendByte(mcu_id[i]);
 	}
 	for (uint8_t i=0; i<10; i++) {	// 10 serial bytes
-		uartSendByte(systemGetSerial(i));
+		uartSendByte(mcu_serial_number[i]);
 	}
 	/*
 		Also send one byte for current status:
@@ -273,3 +245,23 @@ void hostCommandReceive(void) {
 	_delay_ms(HOST_COMMAND_RECEIVE_TIMEOUT);	// Delay instead of polling prevents lock-down.
 	uartDisable();
 }
+
+
+
+
+// These are a couple of examples of code that at some time worked.
+
+/*
+		max30205StartOneShot();
+		_delay_ms(50);
+		temperature = max30205ReadTemperature();
+		temp_MSB = (uint8_t) (temperature>>8);
+		temp_LSB = (uint8_t) temperature;
+
+
+		memoryUltraDeepPowerDownExit();	
+		memoryReadMFDID();
+		memoryPrintMFDID();
+		memoryUltraDeepPowerDownEnter();
+*/
+		
