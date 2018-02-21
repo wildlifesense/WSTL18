@@ -144,12 +144,6 @@
     <Compile Include="error.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="host.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="host.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="indicator.c">
       <SubType>compile</SubType>
     </Compile>

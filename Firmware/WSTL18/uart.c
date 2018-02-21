@@ -22,36 +22,8 @@
 
   ********************************************************************************/
 #include <avr/io.h>
-#include <avr/interrupt.h>		// Enable this if the ISR will be used.
 #include <util/delay.h>			// Needed for diesable delay.
 #include "uart.h"
-
-
-/*
-    DS p.267: The initialization process normally consists of:
-        1. Setting the BAUD rate,
-        2. Setting frame format,
-        3. Enabling the transmitter or receiver depending on the usage.
-    The global interrupt flag should be cleared when doing the initialization.
-
-    Before doing a re-initialization with changed BAUD rate, or frame format, be
-    sure there are no ongoing transmissions while the registers are changed.
-    The TXC flag (UCSRn.TXC) can be used to check that the transmitter has completed
-    all transfers. The RXC flag (UCSRn.RXC) can be used to check that there are no unread
-    data in the receive buffer. The UCSRnA.TXC must be cleared before each transmisison
-    (before UDRn is written) if it is used for this purpose.
-
-
- * A byte was received on the RX UART. Remember to enable UCSR0B.RXCIE0
- * This ISR changes per project, so it should be in project-specific source file, not in library.
-
-ISR(USART0_RX_vect) {
-	// Check UCSR0A.FE0
-	// Check UCSR0A.DOR0
-	// Check UCSR0A.UPE0
-}
- */
-
 
 
 void uartEnable(void) {
