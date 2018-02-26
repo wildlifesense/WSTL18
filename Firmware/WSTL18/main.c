@@ -30,17 +30,15 @@
 #include <avr/pgmspace.h>		// Used to read bytes from flash memory.
 #include <util/crc16.h>			// Used to calculate firmware's CRC.
 #include <util/delay.h>
-#include "rtc.h"
 #include "error.h"
 #include "uart.h"
-#include "spi.h"
-#include "system.h"
 #include "memory.h"
 #include "max30205.h"
 #include "indicator.h"
-#include "host.h"
 
-#define system_soft_reset()        \
+#include "spi.h"
+
+#define system_soft_reset() \
 do                          \
 {                           \
 	wdt_enable(WDTO_15MS);  \
@@ -51,14 +49,17 @@ do                          \
 
 
 char     logger_status;
-uint16_t logger_countdown;
-uint16_t interval_limit;				// How many eight seconds counts till logging interval reached.
-volatile uint32_t total_eightseconds_counter;			// Count of eight seconds intervals since start of timer.
+uint16_t logger_countdown;				// 8-second counts until logger begins recording temperatures.
+uint16_t logger_interval;				// How many eight seconds counts till logging interval reached.
+uint16_t logger_temperature;
+uint16_t logger_memory_location;		// Initialize to 0 or not?
+volatile uint16_t logger_eightseconds_count;		// Number of eightsecond counts since last log
 
 #define FIRMWARE_VERSION_MAJOR 0		// 0-16 so it can squeeze into left-half of 8-bit value.
 #define FIRMWARE_VERSION_MINOR 1		// 0-16 so it can squeeze into right-half of 8-bit value.
 #define FIRMWARE_GET_VERSION ((uint8_t)(FIRMWARE_VERSION_MAJOR<<4|FIRMWARE_VERSION_MINOR))	// Get version in one byte.
 
+#define RX_RECEIVE_TIMEOUT	200					// Time window to receive command, in ms
 #define RX_BUFFER_LENGTH 128
 volatile uint8_t rx_buffer_index;						// Points to current writing location in buffer.
 volatile uint8_t rx_buffer_array[RX_BUFFER_LENGTH];		// Buffer for bytes received through uart.
@@ -71,29 +72,24 @@ uint16_t mcu_bootloader_first_byte;			// Byte address of first bootloader byte. 
 uint16_t mcu_firmware_available_pages;		// Number of pages available for application firmware.
 uint16_t mcu_firmware_last_byte;			// Byte address of last byte of current firmware. Helps calculate firmware size and CRC.
 uint16_t mcu_firmware_crc16_xmodem;			// Xmodem-CRC16 of mcu firmware.
+uint16_t last_data_byte;
+void rxBufferClear(void);			// Clear rx buffer and index.
+void hostCommandReceive(void);		// Send host info string and receive a command.
 
 
 /*
  * Timer 2 is the Real Time Counter, set to fire every 8 seconds.
  */
 ISR(TIMER2_OVF_vect) {
-	total_eightseconds_counter++;
+	logger_eightseconds_count++;
 }
 
-
-#define HOST_COMMAND_RECEIVE_TIMEOUT	200					// Time window to receive command, in ms
 
 
 ISR(USART0_RX_vect) {
-	hostCommandInterruptHandler();
-}
-/*******************************/
-void hostCommandInterruptHandler() {
 	rx_buffer_array[rx_buffer_index] = UDR0;
 	rx_buffer_index++;
 }
-/*******************************/
-
 
 
 
@@ -141,15 +137,30 @@ int main(void) {
 
 	errorInitFlags();
 	indicatorInitialize();
-	rtcStart();					// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
-
+	
+	// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
+	PRR0	&= ~(1<<PRTIM2);								// Clear timer2 bit at power reduction register.
+	ASSR	|= (1<<AS2);									// Clock from external crystal.
+	TCCR2B	|= (1<<CS20)|(1<<CS21)|(1<<CS22);				// Tosc/1024 prescaler = 8sec to overflow.
+	TIMSK2	= 0;
+	TIMSK2	|= (1<<TOIE2);									// Enable overflow interrupt
+	//_delay_ms(1000);										// Allow RTC crystal to stabilize (RTC AN p.5).
+	TCNT2	= 0;											// Clear counter value.
+	sei();
+	//interval_limit = 75;									// Default to 10 minutes.
+	//rtcIntervalCounterClear();
 	
 	// Initialize temperature sensor chip into lowest power consumption.
 	max30205Init();
 	
-	// Initialize memory chip into lowest power consumption.
-	memoryInitialize();
-
+	memoryInitialize();								// Initialize memory chip.
+	last_data_byte = memoryScan();
+	spiEnable();
+	//memoryWriteWord(0x0000, 0xFE9B);
+	memoryWriteWord(0x32FE, 0x1329);
+	spiDisable();
+	last_data_byte = memoryScan();
+	memoryUltraDeepPowerDownEnter();				// Place memory chip into lowest power consumption.
 	// Load MCU ID.
 	mcu_id[0] = boot_signature_byte_get(0);
 	mcu_id[1] = boot_signature_byte_get(2);
@@ -194,12 +205,24 @@ int main(void) {
 			case 'L':
 				if (logger_countdown>0) {
 					logger_countdown--;
-				} else if (eightseconds<interval) {
-					eightseconds += 1
+				} else if (logger_eightseconds_count<logger_interval) {
+					// Do nothing
+				} else {
+					memoryUltraDeepPowerDownExitBegin();
+					max30205StartOneShot();
+					_delay_ms(50);										// Wait for MAX30205 to read temperature.
+					logger_temperature = max30205ReadTemperature();
+					_delay_ms(20);										// Wait for memory to recover from deep power down.
+					// save_to_memory(memory_location, (uint8_t) (logger_temperature>>8));
+					// memory_location++;
+					// save_to_memory(memory_location, (uint8_t) logger_temperature);
+					// memory_location
+					
+					logger_eightseconds_count = 0;
 				}
-				do_log();
 				break;
-			case 'H'
+			case 'H':
+				break;
 		}
 		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for NestProbe TL1P1. Use PD2 for NestProbe TL1P2/P3
 			hostCommandReceive();
@@ -221,12 +244,20 @@ void rxBufferClear(void) {
 	rx_buffer_index = 0;
 }
 
-
+/*
+ * Send host a string of info and receive a command.
+ */
 void hostCommandReceive(void) {
 	rxBufferClear();
 	uartEnable();
 	uartRxInterruptEnable();
-	uartSendString("TL1");
+	// String:
+	// 4 bytes of system info, in this case TL01
+	// 3 bytes of mcu ID
+	// 10 bytes of mcu serial number
+	// 2 bytes of firmware CRC
+	// 1 byte of current status
+	uartSendString("TL01");
 	for (uint8_t i=0; i<3; i++) {	// 3 ID bytes
 		uartSendByte(mcu_id[i]);
 	}
@@ -242,7 +273,7 @@ void hostCommandReceive(void) {
 			U is unknown/undefined status. Firmware should check before resetting.
 	*/
 	uartSendByte('I');
-	_delay_ms(HOST_COMMAND_RECEIVE_TIMEOUT);	// Delay instead of polling prevents lock-down.
+	_delay_ms(RX_RECEIVE_TIMEOUT);	// Delay instead of polling prevents lock-down.
 	uartDisable();
 }
 
@@ -252,11 +283,7 @@ void hostCommandReceive(void) {
 // These are a couple of examples of code that at some time worked.
 
 /*
-		max30205StartOneShot();
-		_delay_ms(50);
-		temperature = max30205ReadTemperature();
-		temp_MSB = (uint8_t) (temperature>>8);
-		temp_LSB = (uint8_t) temperature;
+
 
 
 		memoryUltraDeepPowerDownExit();	

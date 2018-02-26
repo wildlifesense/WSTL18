@@ -25,7 +25,7 @@
     <preserveEEPROM>true</preserveEEPROM>
     <OverrideVtorValue>exception_table</OverrideVtorValue>
     <BootSegment>2</BootSegment>
-    <eraseonlaunchrule>1</eraseonlaunchrule>
+    <eraseonlaunchrule>0</eraseonlaunchrule>
     <AsfFrameworkConfig>
       <framework-data xmlns="">
         <options />
@@ -46,13 +46,13 @@
         <InterfaceProperties>
           <IspClock>125000</IspClock>
         </InterfaceProperties>
-        <InterfaceName>debugWIRE</InterfaceName>
+        <InterfaceName>ISP</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
       <ToolNumber>J41800065621</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
-    <avrtoolinterface>debugWIRE</avrtoolinterface>
+    <avrtoolinterface>ISP</avrtoolinterface>
     <avrtoolinterfaceclock>125000</avrtoolinterfaceclock>
     <ResetRule>0</ResetRule>
     <EraseKey />
@@ -163,12 +163,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="memory.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="rtc.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="rtc.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="spi.c">
