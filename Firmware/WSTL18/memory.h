@@ -33,18 +33,20 @@
 void memoryInitialize(void);
 void memoryTerminate(void);
 
-uint8_t memoryScan(uint8_t starting_page);
+void memoryWriteWord(uint16_t array_address, uint16_t written_word);
+uint16_t memoryReadWord(uint16_t array_address);
+
+uint16_t memoryScan(void);
 void memoryReadStatusRegisters(void);								// Read status registers
 uint8_t memoryGetStatusRegister1(void);
 uint8_t memoryGetStatusRegister2(void);
 void memoryWriteStatusRegister1(uint8_t status);					// Write status register 1
-void memoryWriteStatusRegister2(uint8_t status);					// Write status register 2
 
-_Bool memoryBusy(void);												// Is the memory currently busy?
 void memoryUltraDeepPowerDownEnter();								// Enter ultra-deep power down mode.
-void memoryUltraDeepPowerDownExit();								// Exit ultra-deep power down mode.
+void memoryUltraDeepPowerDownExitBegin();								// Exit ultra-deep power down mode.
 void memoryOTPLoad(void);
 uint8_t memoryLogTemperature(uint16_t temperature_reading);			// Stores 16-bit temperature in memory, returns flags.
+
 
 void memoryReadMFDID(void);
 void memoryPrintMFDID(void);
