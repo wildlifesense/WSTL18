@@ -53,14 +53,18 @@ uint16_t logger_countdown;				// 8-second counts until logger begins recording t
 uint16_t logger_interval;				// How many eight seconds counts till logging interval reached.
 uint16_t logger_temperature;
 uint16_t logger_memory_location;		// Initialize to 0 or not?
+uint16_t logger_local_serial;
+uint16_t logger_battery_level;
 volatile uint16_t logger_eightseconds_count;		// Number of eightsecond counts since last log
 
 #define FIRMWARE_VERSION_MAJOR 0		// 0-16 so it can squeeze into left-half of 8-bit value.
 #define FIRMWARE_VERSION_MINOR 1		// 0-16 so it can squeeze into right-half of 8-bit value.
 #define FIRMWARE_GET_VERSION ((uint8_t)(FIRMWARE_VERSION_MAJOR<<4|FIRMWARE_VERSION_MINOR))	// Get version in one byte.
 
-#define RX_RECEIVE_TIMEOUT	200					// Time window to receive command, in ms
-#define RX_BUFFER_LENGTH 128
+#define LOGGER_HEADER_SIZE	22
+#define LOGGER_FOOTER_SIZE	22
+#define RX_RECEIVE_TIMEOUT	100					// Time window to receive command, in ms
+#define RX_BUFFER_LENGTH	128
 volatile uint8_t rx_buffer_index;						// Points to current writing location in buffer.
 volatile uint8_t rx_buffer_array[RX_BUFFER_LENGTH];		// Buffer for bytes received through uart.
 
@@ -72,7 +76,7 @@ uint16_t mcu_bootloader_first_byte;			// Byte address of first bootloader byte. 
 uint16_t mcu_firmware_available_pages;		// Number of pages available for application firmware.
 uint16_t mcu_firmware_last_byte;			// Byte address of last byte of current firmware. Helps calculate firmware size and CRC.
 uint16_t mcu_firmware_crc16_xmodem;			// Xmodem-CRC16 of mcu firmware.
-uint16_t last_data_byte;
+uint16_t last_data_byte;					// Last byte with data on memory chip. Stores scan at boot to know if there's resident data on memory chip.
 void rxBufferClear(void);			// Clear rx buffer and index.
 void hostCommandReceive(void);		// Send host info string and receive a command.
 
@@ -87,8 +91,12 @@ ISR(TIMER2_OVF_vect) {
 
 
 ISR(USART0_RX_vect) {
-	rx_buffer_array[rx_buffer_index] = UDR0;
-	rx_buffer_index++;
+	if (rx_buffer_index<RX_BUFFER_LENGTH) {
+		rx_buffer_array[rx_buffer_index] = UDR0;
+		rx_buffer_index++;	
+	} else {
+		errorSetFlag(ERROR_FLAG_RX_BUFFER_OVF);
+	}
 }
 
 
@@ -132,11 +140,14 @@ int main(void) {
 	PORTE |= ((1<<PORTE0)|(1<<PORTE1)|(1<<PORTE3));
 	DDRE |= (1<<DDRE2);
 	PORTE &= ~(1<<PORTE2);					// Stays here
+	
+	
 	//Digital input buffers can be disabled by writing to the Digital Input Disable Registers (DIDR0 for ADC, DIDR1 for AC). (found at http://microchipdeveloper.com/8avr:avrsleep)
 	//If the On-chip debug system is enabled by the DWEN Fuse and the chip enters sleep mode, the main clock source is enabled and hence always consumes power. In the deeper sleep modes, this will contribute significantly to the total current consumption.
 
 	errorInitFlags();
 	indicatorInitialize();
+	indicatorOn(); // Debug
 	
 	// Start the Real Time Counter. Takes 1000ms+ to allow crystal to stabilize.
 	PRR0	&= ~(1<<PRTIM2);								// Clear timer2 bit at power reduction register.
@@ -152,25 +163,25 @@ int main(void) {
 	
 	// Initialize temperature sensor chip into lowest power consumption.
 	max30205Init();
-	
 	memoryInitialize();								// Initialize memory chip.
-	last_data_byte = memoryScan();
-	spiEnable();
-	//memoryWriteWord(0x0000, 0xFE9B);
-	memoryWriteWord(0x32FE, 0x1329);
-	spiDisable();
-	last_data_byte = memoryScan();
+	last_data_byte = memoryScan();					// Find last memory chip address with data. Should be 0.
 	memoryUltraDeepPowerDownEnter();				// Place memory chip into lowest power consumption.
+	if (last_data_byte) {
+		logger_status = 'H';
+	} else {
+		logger_status = 'I';
+	}
 	// Load MCU ID.
 	mcu_id[0] = boot_signature_byte_get(0);
 	mcu_id[1] = boot_signature_byte_get(2);
 	mcu_id[2] = boot_signature_byte_get(4);
-	
+
 	// Load MCU serial number.
 	for (uint8_t i=0; i<10; i++) {
 		mcu_serial_number[i] = boot_signature_byte_get(i+14);	// Read signature bytes 14-23
 	}
-
+	logger_local_serial = 0;		// Read this from MCU EEPROM
+	logger_battery_level = 0;		// Read the battery voltage (read bandgap with AVCC reference).
 	// Load bootloader start address and firmware available pages
 	uint8_t bootsz_bits = boot_lock_fuse_bits_get(GET_HIGH_FUSE_BITS);
 	bootsz_bits = bootsz_bits & 0b00000110;					// Keep only bootsz bits. 1: unseet, 0: set
@@ -194,37 +205,46 @@ int main(void) {
 		mcu_firmware_crc16_xmodem = _crc_xmodem_update(mcu_firmware_crc16_xmodem, pgm_read_byte(i));
 	}
 
-
 	// Set the initial logger status.
-	logger_status = 'I';
+	//logger_status = 'I';
 	
+	_delay_ms(500);
+	indicatorOff();
 	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	/*******************************************
+	*               MAIN LOOP                  *
+	*******************************************/
     while (1) {
 		sleep_mode();
-		switch (logger_status) {
-			case 'L':
-				if (logger_countdown>0) {
-					logger_countdown--;
-				} else if (logger_eightseconds_count<logger_interval) {
+		if (logger_status == 'L') {
+			if (logger_countdown>0) {
+				logger_countdown--;
+				logger_eightseconds_count = 0;
+			} else if (logger_eightseconds_count<logger_interval) {
 					// Do nothing
+			} else {
+				if (logger_memory_location < LOGGER_HEADER_SIZE) {	// Wrapped through end of memory?
+					logger_status = 'H';
 				} else {
 					memoryUltraDeepPowerDownExitBegin();
 					max30205StartOneShot();
 					_delay_ms(50);										// Wait for MAX30205 to read temperature.
 					logger_temperature = max30205ReadTemperature();
 					_delay_ms(20);										// Wait for memory to recover from deep power down.
-					// save_to_memory(memory_location, (uint8_t) (logger_temperature>>8));
-					// memory_location++;
-					// save_to_memory(memory_location, (uint8_t) logger_temperature);
-					// memory_location
-					
+					memoryWriteWord(logger_memory_location, logger_temperature);
+					logger_memory_location += 2;
 					logger_eightseconds_count = 0;
+					memoryUltraDeepPowerDownEnter();
 				}
-				break;
-			case 'H':
-				break;
-		}
-		if ( !(PINC & (1<<PINC3))) { // PD2 is down. NOTE: PC3 is temporary for NestProbe TL1P1. Use PD2 for NestProbe TL1P2/P3
+			}
+		} else if (logger_status=='H') {
+			; // Do nothing, for now
+		} else if (logger_status=='I') {
+			;
+		} // End of status if-implemented 'switch'
+		
+		
+		if ( !(PIND & (1<<PIND2))) { // PD2 is down. NOTE: PC3 is temporary for NestProbe TL1P1. Use PD2 for NestProbe TL1P2/P3
 			hostCommandReceive();
 		}
 		indicatorShortBlink();
@@ -248,37 +268,132 @@ void rxBufferClear(void) {
  * Send host a string of info and receive a command.
  */
 void hostCommandReceive(void) {
-	rxBufferClear();
-	uartEnable();
-	uartRxInterruptEnable();
-	// String:
-	// 4 bytes of system info, in this case TL01
-	// 3 bytes of mcu ID
-	// 10 bytes of mcu serial number
-	// 2 bytes of firmware CRC
-	// 1 byte of current status
-	uartSendString("TL01");
-	for (uint8_t i=0; i<3; i++) {	// 3 ID bytes
-		uartSendByte(mcu_id[i]);
+
+	// Send logger info string (4 bytes of model, 3 bytes of MCU ID (why?), 10 bytes of MCU serial number (OK), 2 bytes of firmware CRC, 6 status-dependent bytes.
+	rxBufferClear();									// Clear rx_buffer_array and rx_buffer_index.
+	uartEnable();										// Enable uart module.
+	uartRxInterruptEnable();							// Enable RX receive interrupt.
+
+	uartSendString("\0TL1");							// 4 bytes of system model.
+	for (uint8_t i=0; i<10; i++) {
+		uartSendByte(mcu_serial_number[i]);				// 10 bytes of mcu serial number
 	}
-	for (uint8_t i=0; i<10; i++) {	// 10 serial bytes
-		uartSendByte(mcu_serial_number[i]);
+	uartSendWord(logger_local_serial);					// 2 bytes of local serial.
+	uartSendByte(FIRMWARE_GET_VERSION);					// 1 byte of firmware version
+	uartSendWord(mcu_firmware_crc16_xmodem);			// 2 bytes of firmware CRC16-xmodem
+	uartSendWord(logger_battery_level);					// 2 bytes of battery level or 0 if not available
+	uartSendWord(errorGetFlags());						// 2 bytes of error flags (0x0000 for no errors)
+	uartSendWord(0x0000);								// 2 bytes reserved for future use
+	// Hereon depends on status. Work on this.
+	uartSendByte(logger_status);						// Status: [I]dle, [L]ogging, [H]olding, [D]ownloaded.
+	if (logger_status=='L') {
+		uartSendWord(logger_countdown);					// 2 bytes of logger countdown (deferral)
+		uartSendWord(logger_eightseconds_count);		// 2 bytes of current eightseconds count.
+		uartSendWord(logger_interval);					// 2 bytes of logger interval.		
+	} else if (logger_status=='H') {
+		uartSendWord(0x0000);							// 2 bytes of data length
+		uartSendWord(0x0000);							// 2 bytes of data CRC
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
+	} else if (logger_status=='I') {
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
+	} else {
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
+		uartSendWord(0x0000);							// 2 bytes reserved for future use
 	}
-	/*
-		Also send one byte for current status:
-			I is idle,
-			D is deferred counting,
-			L is logging,
-			R means resident data were found in non-volatile memory on startup. TL1 will not accept logging instructions until residual data are downloaded and cleared.
-			U is unknown/undefined status. Firmware should check before resetting.
-	*/
-	uartSendByte('I');
-	_delay_ms(RX_RECEIVE_TIMEOUT);	// Delay instead of polling prevents lock-down.
-	uartDisable();
+
+	_delay_ms(RX_RECEIVE_TIMEOUT);		// Wait for command string to arrive at rx_buffer_array via RX ISR.
+										// Delay instead of polling or counting bytes prevents lock-down.
+	uartDisable();						// End of command string receival. Shut the uart module down.
+	
+	if (rx_buffer_index == 31) {		// Received a command string, exactly.
+		if (logger_status == 'I') {
+			if (rx_buffer_array[0] == 'B') {
+				uint8_t timestamp_error = 0;
+				// Check that rx_buffer_array bytes 1-18 are all numbers ('0' to '9')
+				for (uint8_t i=1; i<15; i++) { // Check timestamp section of command string
+					if ((rx_buffer_array[i] < '0') || (rx_buffer_array[i] > '9')) {
+						timestamp_error = 1;
+						break;
+					}
+				}
+				if ((rx_buffer_array[19]!='A') && (rx_buffer_array[19]!='L')) {
+					timestamp_error = 1;
+				}
+				// Check that rx_buffer_array byte 19 is either 'A' or 'L' (Atomic or Local)
+				if(!timestamp_error) {		// Timestamp seems ok, proceed to begin logging.
+					logger_countdown = rx_buffer_array[15];
+					logger_countdown <<= 8;
+					logger_countdown |= rx_buffer_array[16];
+					logger_interval = rx_buffer_array[17];
+					logger_interval <<= 8;
+					logger_interval |= rx_buffer_array[18];
+					// Copy format version (0x01), header length (0x16), two RFU bytes (0x0000), and rx_buffer_array 1-18 to first 22 bytes in EEPROM.
+					spiEnable();
+					memoryWriteByte(0x0000, 0x01);				// Format version
+					memoryWriteByte(0x0001, 22);				// Length of header
+					memoryWriteWord(0x0002, 0x0000);			// Reserved for future use
+					memoryWriteArray(0x0004, &rx_buffer_array[1], 18);	// Copy timestamp, countdown, and interval to memory array.
+					spiDisable();
+					logger_memory_location = 22;				// Set for next temperature log
+					// Set logger_status to 'L'
+					logger_status = 'L';
+				
+					logger_eightseconds_count = 0;				// Reset eightseconds counter.
+				} else {
+					;// What if timestamp has error?
+				}
+			} else if (rx_buffer_array[0] == 'D') {	// Only temporary, Idle logger cannot have data.
+				memoryDumpAll();
+				// Stream out all memory bytes, byte per byte
+				// from 0 to logger_memory_location
+			} else if (rx_buffer_array[0] == 'U') {
+				;// Do a firmware update. Here, just reset device.
+			}
+			// End of logger_status == 'I'
+
+				
+		} else if (logger_status == 'L') {
+			if (rx_buffer_array[0]=='E') {
+				;// Do actions to end logging
+			} else if (rx_buffer_array[0]=='D') {
+				;// Download data while logging.
+			}
+		} else if (logger_status=='H') {
+			if (rx_buffer_array[0]=='D') {
+				;// Download data and mark as downloaded
+			}
+		} else if (logger_status=='D') {
+			if (rx_buffer_array[0]=='C') {
+				;// Clear memory and set to idle.
+			}
+		} else {
+			; // Some other logger status?? Flag error.
+		}
+	} else {
+		errorSetFlag(ERROR_FLAG_COMMAND_ERR);
+	}
+	// Check rx_buffer and copy contents to memory chip.
 }
+/*
+void systemReadFlashLocation(void) {
+	for (uint16_t k=(_system_bootloader_start-1); k>0; k--) {
+		if (pgm_read_byte(k) != 0xFF) {
+			_system_flash_location = k;
+			break;
+		}
+	}
 
-
-
+uint16_t systemCalculateAppCrc(uint16_t last_firmware_byte) {
+	uint16_t firmware_crc = 0;
+	for (uint16_t l=0; l<=_system_flash_location; l++) {
+		firmware_crc = _crc_xmodem_update(firmware_crc, pgm_read_byte(l));
+	}
+	return firmware_crc;
+}
+*/
 
 // These are a couple of examples of code that at some time worked.
 

@@ -80,6 +80,15 @@ uint8_t uartReceiveByte(void) {
 }
 
 /*
+ * Send a 16-bit unsigned word over the uart line, MSB first.
+ */
+void uartSendWord(uint16_t data) {
+	uartSendByte((uint8_t) (data>>8));
+	uartSendByte((uint8_t) data);	
+}
+
+
+/*
  * Send a string of up to 255 characters over USART
  */
 void uartSendString(const char myString[]) {

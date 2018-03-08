@@ -24,7 +24,7 @@
 #include <avr/io.h>
 #include "error.h"
 
-uint8_t error_flags;					// Flags to indicate status of device. POR defaults to 0x00.
+uint16_t error_flags;					// Flags to indicate status of device. POR defaults to 0x00.
 
 void errorInitFlags(void) {
 	error_flags = 0;
@@ -32,10 +32,18 @@ void errorInitFlags(void) {
 /*
  * Set a flag on this module's flags variable. Takes one of ERROR_FLAG_... #defines.
  */
-void errorSetFlag(uint8_t flag_to_set) {
+void errorSetFlag(uint16_t flag_to_set) {
 	error_flags |= (1<<flag_to_set);
 }
 
-void errorClearFlag(uint8_t flag_to_clear) {
+void errorClearFlag(uint16_t flag_to_clear) {
 	error_flags &= ~(1<<flag_to_clear);
+}
+
+void errorClearAll(void) {
+	errorInitFlags();
+}
+
+uint16_t errorGetFlags(void) {
+	return error_flags;
 }

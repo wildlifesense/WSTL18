@@ -61,7 +61,7 @@
 #define MEMORY_ARRAY_ADDRESS_LAST		0x00FFFF	// Address of last byte in memory array.
 #define MEMORY_PAGE_FIRST				0x00		// Number of first page in memory array used.
 #define MEMORY_PAGE_LAST				0xFF		// Number of last page in memory array used.
-#define MEMORY_PAGE_SIZE_BYTES			0xFF
+#define MEMORY_PAGE_SIZE				256			// Number of bytes in a memory page.
 
 #define MEMORY_GET_BYTE(ADDRESS)		(0xFF & ADDRESS)			// Return byte within page, 0x00-0xFF
 #define MEMORY_GET_PAGE(ADDRESS)		((0xFF00 & ADDRESS) >> 8)	// Return page, 0x00-0xFF
@@ -81,13 +81,13 @@ uint8_t memory_OTP_array[MEMORY_OTP_ARRAY_LENGTH];
 #define	MEMORY_READ_ARRAY_SLOW		0x03		//	3		0		1+		33
 
 // Erase
-#define MEMORY_ERASE_PAGE			0x81		//	3		0		0		104
-#define	MEMORY_ERASE_BLOCK_4K		0x20		//	3		0		0		104
-#define	MEMORY_ERASE_BLOCK_32K		0x52		//	3		0		0		104
-#define MEMORY_ERASE_BLOCK_32K_ALT	0xD8		//	3		0		0		104
-#define MEMORY_ERASE_CHIP_1			0x60		//	0		0		0		104
-#define MEMORY_ERASE_CHIP_2			0xC7		//	0		0		0		104
-#define MEMORY_ERASE_CHIP_3_OLD		0x62		//	0		0		0		104	Legacy command, do not use.
+#define MEMORY_ERASE_PAGE			0x81		//	3		0		0		104 Time 6-20ms.
+#define	MEMORY_ERASE_BLOCK_4K		0x20		//	3		0		0		104 Time 35-50ms.
+#define	MEMORY_ERASE_BLOCK_32K		0x52		//	3		0		0		104 Time 250-350ms.
+#define MEMORY_ERASE_BLOCK_32K_ALT	0xD8		//	3		0		0		104 Time 250-350ms.
+#define MEMORY_ERASE_CHIP_1			0x60		//	0		0		0		104 Time 500-700ms.
+#define MEMORY_ERASE_CHIP_2			0xC7		//	0		0		0		104 Time 500-700ms.
+#define MEMORY_ERASE_CHIP_3_OLD		0x62		//	0		0		0		104	Time 500-700ms. Legacy command, do not use.
 
 // Byte / Page Program, 1 to 256 bytes
 #define MEMORY_PROGRAM				0x02		//	3		0		1+		104		1 to 256 bytes, page overrun rewinds to start!
@@ -315,20 +315,45 @@ void memoryTerminate(void) {
 	; // Nothing to do here, yet.
 }
 
+/*
+ * Write a byte onto the memory chip
+ */
+void memoryWriteByte(uint16_t array_address, uint8_t written_byte) {
+	_memoryCheckBusy();
+	_memorySingleCommand(MEMORY_WRITE_ENABLE);
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_PROGRAM);
+	_memorySendAddress(array_address);
+	spiTradeByte(written_byte);
+	MEMORY_CS_DESELECT;
+}
+
+/*
+ * Read a byte from memory chip.
+ */
+uint8_t memoryReadByte(uint16_t array_address) {
+	uint8_t returned_byte;
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_READ_ARRAY_SLOW);
+	_memorySendAddress(array_address);
+	returned_byte = spiTradeByte(0x00);
+	MEMORY_CS_DESELECT;
+	return returned_byte;
+}
 
 /*
  * Write a 16-bit value to memory starting (msb) at array_address.
  */
 void memoryWriteWord(uint16_t array_address, uint16_t written_word) {
+	_memoryCheckBusy();
 	_memorySingleCommand(MEMORY_WRITE_ENABLE);
 	MEMORY_CS_SELECT;
 	spiTradeByte(MEMORY_PROGRAM);
-	_memorySendAddress(array_address);//write_location); // TODO: Fix this mess
+	_memorySendAddress(array_address);
 	// No dummy needed for writing.
 	spiTradeByte((uint8_t) (uint8_t) (written_word>>8));
 	spiTradeByte((uint8_t) written_word);
 	MEMORY_CS_DESELECT;
-	_memorySingleCommand(MEMORY_WRITE_DISABLE);		// (Nikos) This may be unnecessary if chip does it automatically. Check.
 }
 
 /*
@@ -355,10 +380,59 @@ uint16_t memoryReadWord(uint16_t array_address) {
 /*
  * Read number_of_bytes bytes from array_pointer and write them to
  * EEPROM starting at eeprom_address.
+ * This function doesn't check for page wrap.
  */
-void memoryWriteArray(uint16_t eeprom_address, uint8_t *array_pointer, uint8_t number_of_bytes) {
+void memoryWriteArray(uint16_t starting_address, uint8_t *array_pointer, uint8_t number_of_bytes) {
+	uint8_t address_byte = (uint8_t) starting_address & 0xFF;
 	_memoryCheckBusy();
+	// How many writes?
+	if ( (MEMORY_PAGE_SIZE-number_of_bytes) >= address_byte) {	// All array fits in current page?
+		_memorySingleCommand(MEMORY_WRITE_ENABLE);
+		MEMORY_CS_SELECT;
+		spiTradeByte(MEMORY_PROGRAM);
+		_memorySendAddress(starting_address);
+		for (uint8_t i=0; i<number_of_bytes; i++) {
+			spiTradeByte(array_pointer[i]);
+		}
+		MEMORY_CS_DESELECT;
+	} else {													// If not, we'll have to do two writes to avoid page wrap.
+		// split array into two writes
+	}
 }
+
+
+/*
+ * Read number_of_bytes bytes from memory chip starting at address starting_address and store them
+ * into array pointed by array_pointer.
+ */
+void memoryReadArray(uint16_t starting_address, uint8_t *array_pointer, uint8_t number_of_bytes) {
+	_memoryCheckBusy();
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_READ_ARRAY_SLOW);
+	_memorySendAddress(starting_address);
+	for (uint8_t i=0; i<number_of_bytes; i++) {
+		array_pointer[i] = spiTradeByte(0x00);
+	}
+	MEMORY_CS_DESELECT;
+}
+
+void memoryDumpAll(void) {
+	spiEnable();
+	uartEnable();
+	_memoryCheckBusy();
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_READ_ARRAY_SLOW);
+	_memorySendAddress(0x0000);
+	uint16_t i=0;
+	do {
+		uartSendByte(spiTradeByte(0x00));
+		i++;
+	} while (i>0);
+	MEMORY_CS_DESELECT;
+	spiDisable();
+	uartDisable();
+}
+
 
 /*
  * Scan memory array backwards and find the last byte that isn't blank (0xFF).
@@ -411,7 +485,27 @@ uint16_t memoryScan(void) {
 	return 0;	// If all memory is blank, return 0.
 }
 
+/*
+ * Erase EEPROM page page_number (0x00-0xFF). Erased state for each byte is 0xFF.
+ */
+void memoryErasePage(uint8_t page_number) {
+	_memorySingleCommand(MEMORY_WRITE_ENABLE);
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_ERASE_PAGE);
+	spiTradeByte(0x00);						// Dummy
+	spiTradeByte(page_number);
+	spiTradeByte(0x00);						// Dummy
+	MEMORY_CS_DESELECT;
+	// Takes 6-20ms.
+}
 
+void memoryEraseChip(void) {
+	_memorySingleCommand(MEMORY_WRITE_ENABLE);
+	MEMORY_CS_SELECT;
+	spiTradeByte(MEMORY_ERASE_CHIP_1);
+	MEMORY_CS_DESELECT;
+	// Takes 500-700ms
+}
 /*
  *	memoryReadStatusRegisters: Read the status registers of the memory chip
  *	and store them in this module's variables.

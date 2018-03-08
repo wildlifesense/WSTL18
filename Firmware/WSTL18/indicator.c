@@ -6,15 +6,28 @@
  */
 #include <avr/io.h>
 #include <util/delay.h>
-#define INDICATOR_OUTPUT	DDRE |= (1<<DDRE2)			// Set the indicator pin as output
-#define INDICATOR_ON		PORTE |= (1<<PORTE2)				// Turn the indicator on
-#define INDICATOR_OFF		PORTE &= ~(1<<PORTE2)				// Turn the indicator off
+#define INDICATOR_OUTPUT	DDRE |= (1<<DDRE1)					// Set the indicator pin as output
+#define INDICATOR_ON		PORTE |= (1<<PORTE1)				// Turn the indicator on
+#define INDICATOR_OFF		PORTE &= ~(1<<PORTE1)				// Turn the indicator off
 
 void indicatorInitialize(void) {
 	INDICATOR_OUTPUT;					// Set LED pin as output
 	INDICATOR_OFF;				// Set it to LOW.
 }
 
+/*
+ * Turn indicator on.
+ */
+void indicatorOn(void) {
+	INDICATOR_ON;
+}
+
+/*
+ * Turn indicator off.
+ */
+void indicatorOff(void) {
+	INDICATOR_OFF;
+}
 /*
  * Emit the shortest, barely visible, light pulse. Indicates normal operation.
  */
