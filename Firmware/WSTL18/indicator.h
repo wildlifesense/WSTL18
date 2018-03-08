@@ -11,6 +11,8 @@
 
 
 void indicatorInitialize(void);
+void indicatorOn(void);
+void indicatorOff(void);
 void indicatorShortBlink(void);		// Emit the shortest, barely visible, light pulse. Indicates normal operation.
 void indicatorDoubleBlink(void);	// Emit a clear double pulse. Indicates error in operation.
 

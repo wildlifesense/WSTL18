@@ -33,6 +33,7 @@ void uartRxInterruptDisable(void);
 // UART data exchange
 void uartSendByte(uint8_t data);
 uint8_t uartReceiveByte(void);
+void uartSendWord(uint16_t data);
 void uartSendString(const char myString[]);
 void uartPrintWord(uint16_t word);
 void uartPrintBinaryByte(uint8_t byte);

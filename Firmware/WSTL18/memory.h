@@ -33,10 +33,17 @@
 void memoryInitialize(void);
 void memoryTerminate(void);
 
+void memoryWriteByte(uint16_t array_address, uint8_t written_byte);
+uint8_t memoryReadByte(uint16_t array_address);
 void memoryWriteWord(uint16_t array_address, uint16_t written_word);
 uint16_t memoryReadWord(uint16_t array_address);
 
+void memoryWriteArray(uint16_t starting_address, uint8_t *array_pointer, uint8_t number_of_bytes);
+void memoryReadArray(uint16_t starting_address, uint8_t *array_pointer, uint8_t number_of_bytes);
+void memoryDumpAll(void);
 uint16_t memoryScan(void);
+void memoryErasePage(uint8_t page_number);
+void memoryEraseChip(void);
 void memoryReadStatusRegisters(void);								// Read status registers
 uint8_t memoryGetStatusRegister1(void);
 uint8_t memoryGetStatusRegister2(void);
