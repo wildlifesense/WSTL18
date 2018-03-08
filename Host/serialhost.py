@@ -25,6 +25,7 @@ dt_local =  datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp())
 local_timezone = time.tzname[0]
 local_dst = time.localtime().tm_isdst
 local_pytz = pytz.timezone(local_timezone)
+connected_devices = list()                  # List containing mcu ids of connected devices. Used to check re-connect within session.
 
 # Use NTP to calculate computer clock offset to UTC.
 c = ntplib.NTPClient()
@@ -38,13 +39,14 @@ else:
     time_method = "N"                       # 'N' stands for network.
 del(c, ntp_object)                          # Don't need these any more.
 
-logging_interval_eightseconds = {   1:75,                   # 10 minutes
-                                    2:225,                  # 30 minutes
-                                    3:450,                  #  1 hour
-                                    4:1350,                 #  3 hours
-                                    5:2700,                 #  6 hours
-                                    6:5400,                 # 12 hours
-                                    7:10800 }               # 24 hours
+logging_interval_eightseconds = {   1:15,                   # 2 minutes
+                                    2:75,                   # 10 minutes
+                                    3:225,                  # 30 minutes
+                                    4:450,                  #  1 hour
+                                    5:1350,                 #  3 hours
+                                    6:2700,                 #  6 hours
+                                    7:5400,                 # 12 hours
+                                    8:10800 }               # 24 hours
 
 def interval_text(eightseconds):
     intext = ""
@@ -76,7 +78,7 @@ def gettime():
 
 # Set up a handler for Ctrl+c
 def sigint_handler(sig_number, frame):
-    print("\n\nI hope this wasn't messy.")
+    print("\n\nGoodbye and thanks for all the fish!")
     quit()
 
 def exit_program(message="Bye bye!"):
@@ -110,69 +112,86 @@ def localToUtc(zonename, naive_datetime):
 def get_logging_start():
     while(1):
         print("\nPlease enter local date and time you would like logging to begin at.")
-        print("This can be up to six days from now.")
+        print("This can be up to six days and one hour from now.")
         ltime = time.localtime()
+        datetime_min = datetime.datetime.now()
+        datetime_max = datetime_min + datetime.timedelta(days=6, hours=1)
 
         # Get the year
-        if ltime.tm_mon == 12 and ltime.tm_day > 24:
-            f_year = input("Year? (%d or %d) " % (ltime.tm_year, ltime.tm_year+1))
+        if datetime_min.year == datetime_max.year:
+            f_year = int(datetime_min.year)
+        else:
+            f_year = input("Year? (%d or %d) " % (datetime_min.year, datetime_max.year))
             if f_year.isdigit():
                 f_year = int(f_year)
             else:
                 continue
-        else:
-            f_year = ltime.tm_year
 
         # Get the month
-        f_mon =   input("%s or %s? (type %d or %d) " % (    month_name(ltime.tm_mon),
-                                                            month_name(ltime.tm_mon+1),
-                                                            ltime.tm_mon,
-                                                            ltime.tm_mon + 1))
-        if f_mon.isdigit():
-            f_mon = int(f_mon)
+        if datetime_min.month == datetime_max.month:
+            f_mon = datetime_min.month
         else:
-            continue
+            f_mon = input("%s or %s? (type %d or %d) " % (month_name(datetime_min.month),
+                                                            month_name(datetime_max.month),
+                                                            datetime_min.month,
+                                                            datetime_max.month))
+            if f_mon.isdigit():
+                f_mon = int(f_mon)
+            else:
+                continue
 
         # Get the day of month
-        if f_mon == ltime.tm_mon:
-            minday = ltime.tm_mday
+        if f_mon == datetime_min.month:
+            minday = datetime_min.day
 
-            maxday = int((datetime.date(f_year, f_mon+1, 1) - datetime.timedelta(days=1)).day)
+            maxday = (datetime.date(f_year, f_mon+1, 1) - datetime.timedelta(days=1)).day
         else:
             minday = 1
-            maxday = ltime.tm_mday
-            if f_mon == 2 and maxday > 28:                  # Make sure we don't offer February 
-                if calendar.isleap(f_year):
-                    maxday = 29
-                else:
-                    maxday = 28
-            elif maxday == 31:                # Make sure we don't offer June/September/November 31
-                maxday = int((datetime.date(f_year, f_mon+2, 1) - datetime.timedelta(days=1)).day)
-
-        f_mday =    int(input("Day of month? (%d to %d) " % (minday, maxday)))
-        if f_mday < minday or f_mday > maxday:
-            print("\nLet's try again")
+            maxday = datetime_max.day
+        f_mday = input("Day of month? (%d to %d) " % (minday, maxday))
+        if f_mday.isdigit():
+            f_mday = int(f_mday)
+            if f_mday < minday or f_mday > maxday:
+                print("\nLet's try again")
+                continue
+        else:
             continue
         
         # Get the hour (24h format)
-        if f_mday == ltime.tm_mday and f_mon == ltime.tm_mon:
-            minhour = ltime.tm_hour
+        if f_mday == datetime_min.day and f_mon == datetime_min.month:
+            minhour = datetime_min.hour
         else:
             minhour = 0
 
-        f_hour =    input("Hour? (%d to 23) " % minhour)
+        if f_mday == datetime_max.day and f_mon == datetime_max.month:
+            maxhour = datetime_max.hour
+        else:
+            maxhour = 23
+
+        f_hour =    input("Hour? (%d to %d) " % (minhour, maxhour))
         if f_hour.isdigit():
             f_hour = int(f_hour)
+        else:
+            continue
 
         # Get the minute
-        if f_year == ltime.tm_year and f_mon == ltime.tm_mon and f_mday == ltime.tm_mday and f_hour == ltime.tm_hour:
-            minmin = ltime.tm_min
+        if f_year == datetime_min.year and f_mon == datetime_min.month and f_mday == datetime_min.day and f_hour == datetime_min.hour:
+            minmin = datetime_min.minute
+            maxmin = 59
+        elif f_year == datetime_max.year and f_mon == datetime_max.month and f_mday == datetime_max.day and f_hour == datetime_max.hour:
+            minmin = 0
+            maxmin = datetime_max.minute
         else:
             minmin = 0
-        f_minute =  input("Minute? (%d to 59) " % minmin)
+            maxmin = 59
+
+        f_minute =  input("Minute? (%d to %d) " % (minmin, maxmin))
         if f_minute.isdigit():
             f_minute = int(f_minute)
+        else:
+            continue
         return(datetime.datetime(f_year, f_mon, f_mday, f_hour, f_minute))
+#################################################### Work below here ##########################
 
         # Is there a daylight saving time change between now and start of logging? If so, inform user and 
         # ask them if they want to proceed. If not, repeat start datetime setting.
@@ -193,7 +212,15 @@ def get_logging_interval():
             if firstint <= interval <= lastint:
                 return(logging_interval_eightseconds[interval])
             elif interval == lastint+1:
-                print("Ok let's choose")
+                print("You can set an arbitrary interval as an integer multiplier of 8 second counts.")
+                print("For example, type 900 for a 2 hour interval (900 * 8 seconds = 7200 seconds = 120 minutes = 2 hours).")
+                print("Plese note that intervals under 10 minutes will lead to reduced battery lifetime.")
+                interval = input("8-second multiplier (1 to 65535): ")
+                if interval.isdigit():
+                    interval = int(interval)
+                    if 1 <= interval <= 65535:
+                        return(interval)
+                continue
 
 
 #
@@ -202,18 +229,16 @@ def get_logging_interval():
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, sigint_handler)        # Set handler for ctrl+c.
     version = "0.1"
-    print("Wildlife Sense , version %s" % version)
+    print("Wildlife Sense NestProbe TL1 Manager, version %s" % version)
     print("This is free software under the terms of GPL v3.0. See COPYING for details.")
     print("\nPress Ctrl+c to exit program.")
 
     #
     # Quit if there's no serial device connected.
     #
-    """
     if not list_ports.comports():
         print("No serial devices found.")
         exit_program()
-    """
 
     #
     # Ask user to verify that date, time, and timezone are correct.
@@ -229,7 +254,7 @@ if __name__ == "__main__":
 	#print("")
     # or show if timezone/dst settings are not specified
     while (1):
-        #print("UTC:        %s" % time.strftime("%A %B %d %Y, %H:%M:%S", time.gmtime()) )
+        #print("UTC:        %s" %time.strftime("%A %B %d %Y, %H:%M:%S", time.gmtime()) )
         print("\nYour time zone is %s. Local time is %d hours %s UTC." % (
                             time.strftime("%Z", time.localtime()),
                             int(-time.timezone/3600),
@@ -246,17 +271,6 @@ if __name__ == "__main__":
             print("Please fix your computer's time and try again.")
             exit_program()
 
-	#while (1):
-	#    zoneok = input("Is your time zone %s?\n(Yes/No) " % time.strftime("%Z", time.localtime()))
-	#    if not zoneok:
-	#        continue
-	#    if zoneok[0].lower() == 'y':
-	#        break
-	#    elif zoneok[0].lower() == 'n':
-	#        print("Please fix your computer's time zone and try again.")
-	#        exit_program()
-	#
-	
 	#
 	# Show all serial ports found on this computer (that the serial library can use).
 	#
@@ -267,10 +281,14 @@ if __name__ == "__main__":
                         'D: Download data from logger',
 
                         'B: Begin logging immediately',
-                        'F: Begin logging at a future time, up to six days away',
+                        'F: Begin logging at a future time, up to six days and one hour from now',
 
                         'E: End logging',
-                        'C: Clear logger (only possible after data downloaded)']
+                        'C: Clear logger (only possible after data downloaded)',
+                        
+                        "A: Add logger(s) to this manager's collection",
+                        "R: Remove logger(s) from this manager's collection",
+                        'S: Write local serial number to this/these device/s',]
                         #'T: End logging, download data, and clear logger']
                         #'U: Update firmware.']
     allinitials = ""
@@ -307,13 +325,14 @@ if __name__ == "__main__":
     # B and F need a logging interval
     if desired_action in "BF":
         if desired_action == "F":
-            future_utc_dt = localToUtc(local_timezone, get_logging_start())
-            print(future_utc_dt.strftime("%Y%m%d %H:%M:%S %Z"))
+            future_local_dt_naive = get_logging_start()
+            future_utc_dt = localToUtc(local_timezone, future_local_dt_naive)
+            print(future_local_dt_naive.strftime("\nLogging will begin at %H:%M on %B %d, %Y (+/- 8 seconds)."))
         logging_interval = get_logging_interval()
 
     if desired_action == "D":
         pass
-        # Need to ask user if the program (if it has internet access?) should upload data to ovilog.com.
+        # Need to ask user if the program (if it has internet access?) should upload data to nestprobe.com.
         # This will only work if the user is registered there?? Or the logger is registered?
 	
 
@@ -342,51 +361,67 @@ if __name__ == "__main__":
     elif len(serial_devices) == 1:
         device_selected = serial_devices[0].device
 
-    #
-    # Ok we've got everything. Let's start connecting to the loggers
-    #
-    # Assuming there's only one serial device attached to /dev/ttyUSB0. 1Mbits with 2 stopbits as set on WSTL18.
-    ser = serial.Serial(device_selected, 1000000, stopbits=2, timeout=None)
-    #ser.flush()
-    #the_file = open('somefile.txt', 'a')
-    #the_counter = 1000000
-    # List the device used.
-    print("Opened " + ser.name)
-    
-    #exit_program()
 
     ###############################################################################################
     #                                                                                             #
+    # Ok we've got everything. Let's start connecting to the loggers.                             #
+    #                                                                                             #
     ###############################################################################################
     
+
     print("Please connect and hold cable to a WSTL18 logger.")
-    ser = serial.Serial(device_selected, 1000000, stopbits=2, timeout=None)
+    # 1Mbits with 2 stopbits as set on WSTL18.
+    ser = serial.Serial(device_selected, 1000000, stopbits=2)
+    print("Opened " + ser.name)
     while(1):
-        #the_counter -= 1
-        x = ser.read()                                  # Wait for the 'x' character
-        if x == b'x':
-            ser.write('HELLO'.encode('utf-8'))
-            ser.flush()
-            print("Sending..")
-            ser.read(size=4)
-            print(x)
-        #the_file.write("%s" % x)
-        #temperature_reading = ser.read(2)#.decode()
-        #temp =  round(int.from_bytes(temperature_reading, 'big') * 0.00390625, 1)
-        #print("%.1f" % temp)
-    
-"""
-    try:
-        dataIn = self.port.read()
-    except serial.SerialException as e:
-        #There is no new data from serial port
-        return None
-    except TypeError as e:
-        #Disconnect of USB->UART occured
-        self.port.close()
-        return None
-    else:
-        #Some data was received
-        return dataIn
-    
-"""
+        ser.timeout = None
+        x = ser.read(32) 
+        print(x)       # Debugging
+        model         = x[0:4].decode('utf-8')
+        mcu_serial    = x[4:14].hex().upper()
+        local_serial  = x[14:16].hex().upper()
+        firmware_version = x[16:17].hex().upper()
+        firmware_crc  = x[17:19].hex().upper()
+        battery_level = int.from_bytes(x[20:22], byteorder='big')
+        logger_flags  = x[
+
+        logger_status = x[19:20].decode('utf-8')
+        logger_count = int.from_bytes(x[22:24], byteorder='big')
+        #if mcu_serial in connected_devices:
+            #print("\nThis device was already connected in this session. Please connect another device to continue or exit.")
+            #continue
+        #else:
+            #connected_devices.append(mcu_serial)
+        if logger_status == 'I' or logger_status == 'L' or True:        # WHAT THE HELL! FIΧ THIS CRAP!!!
+            if desired_action == 'B':
+                datetime_now = datetime.datetime.fromtimestamp(datetime.datetime.utcnow().timestamp()).strftime("%Y%m%d%H%M%S")
+                command_string =  desired_action.encode('utf-8') +                      \
+                                  datetime_now.encode('utf-8') +                        \
+                                  (3000).to_bytes(length=2, byteorder='big') +          \
+                                  logging_interval.to_bytes(length=2, byteorder='big')      # 2 bytes, total = 19
+                ser.write(command_string)
+                print(command_string)
+            elif desired_action == 'I':
+                print("\nModel: " + model)
+                print("Serial number: " + mcu_serial)
+                print("Firmware CRC: " + firmware_crc)
+                print("Status: " + logger_status)
+                print("Count: " + str(logger_count))
+                # + " \tLogs: " + str(logger_count) )
+            elif desired_action == 'D':
+                ser.write('D000000000000000000'.encode('utf-8'))
+                ser.timeout = 1.0
+                filedata = ser.read(512*1024)
+                print("Read %d bytes" % len(filedata))
+                #print("Logger is idle, no data to download.")
+                datetime_now = datetime.datetime.fromtimestamp(datetime.datetime.utcnow().timestamp()).strftime("%Y%m%d%H%M%S")
+                data_filename = mcu_serial + datetime_now + ".TL01Data"
+                with open(data_filename, 'wb') as mydatafile:
+                    mydatafile.write(filedata)
+                    mydatafile.close()
+                    print("Dumped data in file %s" % data_filename)
+
+        #elif logger_status == 'L':
+            #if desired_action == 'B':
+                #print("Logger is logging, cannot be set to start logging again.")
+        #if desired_action == 'D':
